@@ -1,11 +1,11 @@
-"""Default-probability model diagnostics.
+"""Default-model diagnostics.
 
-Two things a reader should be able to check for themselves:
+Two things a reader should be able to check:
 
-* the PD model is reasonably *calibrated* out-of-sample on the real data (so using
-  its probabilities to price and decide is defensible), and
-* the offered rate genuinely *moves* predicted default through the affordability
-  channel — i.e. the uncertainty really is decision-dependent.
+* the PD model is reasonably calibrated out-of-sample on the real data (so using its
+  probabilities to price and decide is defensible), and
+* the offered rate genuinely moves predicted default, because the rate is a real
+  feature estimated from resolved loans.
 """
 
 from __future__ import annotations
@@ -16,6 +16,8 @@ from sklearn.model_selection import cross_val_predict
 from model.default_model import CATEGORICAL, NUMERIC, TARGET
 
 from . import _common as C
+
+RATE_GRID = np.linspace(0.06, 0.22, 26)
 
 
 def compute() -> dict:
@@ -37,14 +39,14 @@ def compute() -> dict:
 
     # Decision-dependence: mean PD vs offered rate, for several kappa.
     base_pd = model.predict_baseline_pd(df)
-    marginal = df[base_pd >= np.quantile(base_pd, 2 / 3)]
-    rates = np.linspace(0.030, 0.055, 26)
+    riskier = df[base_pd >= np.quantile(base_pd, 2 / 3)]
     curves = {}
     for k in [0.0, 1.0, 2.0, 3.0]:
         curves[f"{k:g}"] = [float(model.predict_pd_under_terms(
-            marginal, rate=r, kappa=k, tenor_months=300).mean()) for r in rates]
-    return {"auc": model.cv_auc, "pred_mean": pred_mean, "obs_mean": obs_mean,
-            "rates": rates.tolist(), "pd_curves": curves,
+            riskier, rate=r, kappa=k).mean()) for r in RATE_GRID]
+    return {"auc": model.cv_auc, "rate_coef": model.rate_coefficient(),
+            "pred_mean": pred_mean, "obs_mean": obs_mean,
+            "rates": RATE_GRID.tolist(), "pd_curves": curves,
             "default_rate": float(y.mean())}
 
 
@@ -53,26 +55,27 @@ def render(d: dict) -> None:
     C.apply_style()
     fig, (ax, ax2) = plt.subplots(1, 2, figsize=(12.4, 5.0))
 
-    ax.plot([0, 0.7], [0, 0.7], ls=":", color=C.PALETTE["muted"], lw=1.6,
+    hi = max(max(d["pred_mean"]), max(d["obs_mean"])) * 1.05
+    ax.plot([0, hi], [0, hi], ls=":", color=C.PALETTE["muted"], lw=1.6,
             label="a perfect model")
     ax.plot(d["pred_mean"], d["obs_mean"], "o-", color=C.PALETTE["pareto"], lw=2.4,
             ms=7, markeredgecolor="white", label="our model")
     ax.set_xlabel("risk the model predicted")
     ax.set_ylabel("how often they actually defaulted")
-    ax.set_title(f"The model matches reality (AUC = {d['auc']:.3f})")
+    ax.set_title(f"The model matches reality (AUC = {d['auc']:.2f})")
     ax.legend(loc="upper left")
 
     cols = ["#264653", "#2a9d8f", "#f4a261", "#e76f51"]
     rates = np.array(d["rates"]) * 100
     for (k, ys), col in zip(d["pd_curves"].items(), cols):
-        ax2.plot(rates, np.array(ys) * 100, color=col, lw=2.6, label=f"κ = {k}")
+        ax2.plot(rates, np.array(ys) * 100, color=col, lw=2.6, label=f"k = {k}")
     ax2.set_xlabel("interest rate the bank offers  (%)")
     ax2.set_ylabel("chance of missing payments  (%)")
     ax2.set_title("A higher rate raises the risk")
     ax2.legend(title="how strongly rate affects risk")
 
-    fig.suptitle("A risk model that reacts to the price",
-                 fontsize=15.5, fontweight="bold", y=1.0)
+    fig.suptitle("A risk model built from real loans that reacts to the price",
+                 fontsize=15, fontweight="bold", y=1.0)
     fig.subplots_adjust(top=0.85, wspace=0.24)
     C.savefig(fig, "pd_model.png")
 
@@ -82,7 +85,8 @@ def main() -> dict:
     d = compute()
     C.save_json("model_diagnostics.json", d)
     render(d)
-    print(f"  cross-validated AUC = {d['auc']:.3f}; default rate = {d['default_rate']:.3f}")
+    print(f"  cross-validated AUC = {d['auc']:.3f}; rate coefficient = "
+          f"{d['rate_coef']:+.3f}; default rate = {d['default_rate']:.3f}")
     return d
 
 

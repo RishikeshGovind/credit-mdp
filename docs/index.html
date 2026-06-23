@@ -67,15 +67,21 @@ section+section{border-top:1px solid var(--border);}
 }
 .hero-note p{font-size:16px; color:var(--text); margin-bottom:0; max-width:none;}
 .hero-note strong{font-weight:600;}
+.hero-stats{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:1px; margin-top:46px; max-width:760px;
+  border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--border);
+}
+.stat{padding:28px 30px; background:var(--bg);}
+.stat .num{font-family:'Playfair Display',serif; font-size:clamp(32px,4vw,54px); font-weight:700; line-height:1; color:var(--teal-deep);}
+.stat .num.o{color:var(--orange);} .stat .num.v{color:var(--violet);}
+.stat .lbl{font-size:12px; color:var(--muted); margin-top:10px; text-transform:uppercase; letter-spacing:.07em; line-height:1.5;}
 .scroll-cue{margin-top:54px; display:flex; align-items:center; gap:10px; font-size:12px; color:var(--subtle); letter-spacing:.06em;}
 .scroll-cue::after{content:''; width:1px; height:44px; background:var(--border);}
 
 .two-col{display:grid; grid-template-columns:1fr 1fr; gap:52px; margin-top:40px; align-items:start;}
 @media(max-width:760px){.two-col{grid-template-columns:1fr;}}
-.tag{
-  display:inline-block; border-radius:20px; padding:4px 14px; font-size:12px;
-  font-weight:600; margin-bottom:16px;
-}
+.two-col h3{margin-bottom:12px;}
+.tag{display:inline-block; border-radius:20px; padding:4px 14px; font-size:12px; font-weight:600; margin-bottom:16px;}
 .tag.grey{background:#EFEAE1; color:#857c6e; border:1px solid var(--border);}
 .tag.warm{background:#FDEDE8; color:#9C3B26; border:1px solid #F3B6A6;}
 .two-col p{color:var(--muted); margin-bottom:14px;}
@@ -93,10 +99,7 @@ section+section{border-top:1px solid var(--border);}
 .fig-cap{font-size:14px; color:var(--muted); line-height:1.6; margin-top:14px; max-width:none;}
 .fig-cap b{color:var(--text); font-weight:600;}
 
-.callout{
-  margin:24px 0; padding:22px 26px; background:#FFF6F2; border:1.5px solid var(--orange);
-  border-radius:12px; display:flex; gap:16px; align-items:flex-start; max-width:74ch;
-}
+.callout{margin:24px 0; padding:22px 26px; background:#FFF6F2; border:1.5px solid var(--orange); border-radius:12px; display:flex; gap:16px; align-items:flex-start; max-width:74ch;}
 .callout .ic{font-size:22px;}
 .callout h4{font-family:'Playfair Display',serif; font-size:18px; margin-bottom:6px;}
 .callout p{font-size:15px; color:var(--muted); margin-bottom:0; max-width:none;}
@@ -110,7 +113,7 @@ section+section{border-top:1px solid var(--border);}
 .lim li{display:flex; gap:16px; padding:18px 0; border-bottom:1px solid var(--border); font-size:15px; color:var(--muted); line-height:1.6;}
 .lim li:last-child{border-bottom:none;}
 .lim li strong{color:var(--text); display:block; margin-bottom:3px;}
-.lim .n{font-family:'Playfair Display',serif; font-size:22px; font-weight:700; color:var(--teal-deep); width:24px; flex-shrink:0;}
+.lim .n{font-family:'Playfair Display',serif; font-size:21px; font-weight:700; color:var(--teal-deep); width:24px; flex-shrink:0;}
 
 .run{margin-top:30px; background:var(--slate); color:#EDE9E2; border-radius:14px; padding:30px 34px; max-width:680px;}
 .run h3{color:#fff; margin-bottom:14px;}
@@ -146,13 +149,18 @@ footer{padding:34px clamp(26px,6vw,120px); border-top:1px solid var(--border); d
     <div class="accent-line"></div>
     <p class="lead">Say a bank is deciding whether to give you a loan, and what
     interest rate to charge. A lower rate is easier to pay back, so you are less
-    likely to miss payments. A higher rate earns the bank more money each month, but
-    it strains your budget, so you are more likely to fall behind.</p>
+    likely to miss payments. A higher rate earns the bank more, but it strains your
+    budget, so you are more likely to fall behind.</p>
     <div class="hero-note">
       <p>So here is the catch. The rate the bank picks does not just <em>measure</em>
-      your risk. It <strong>changes</strong> it. Most banks ignore this. They guess how
-      risky you are first, as if the rate had nothing to do with it, and only then pick
-      the rate. This little project asks what happens if you take that loop seriously.</p>
+      your risk. It <strong>changes</strong> it. Most banks ignore this. They guess
+      how risky you are first, as if the rate had nothing to do with it, and only then
+      pick the rate. This project takes that loop seriously and asks whether it helps.</p>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="num o">9,578</div><div class="lbl">real Lending Club loans, all finished</div></div>
+      <div class="stat"><div class="num">4</div><div class="lbl">goals balanced at once, not one</div></div>
+      <div class="stat"><div class="num v">100%</div><div class="lbl">reproducible, fixed seeds</div></div>
     </div>
     <div class="scroll-cue">SCROLL TO READ THE STORY</div>
   </div>
@@ -177,11 +185,12 @@ footer{padding:34px clamp(26px,6vw,120px); border-top:1px solid var(--border); d
       <div>
         <span class="tag warm">the blind spot</span>
         <h3>The rate is part of the risk</h3>
-        <p>The guess is made as if the rate were already fixed. But a cheaper loan is a
-        safer loan, because it is easier to pay back. The bank's own choice feeds back
-        into the very risk it was trying to measure.</p>
-        <p>So this is not really a guessing problem with a decision bolted on the end.
-        The decision and the risk are tangled together.</p>
+        <p>The guess is made as if the rate were already fixed. But a cheaper loan is
+        a safer loan, because it is easier to pay back. The bank's own choice feeds
+        back into the very risk it was trying to measure.</p>
+        <p>And here the data backs it up. We use real loans that record both the rate
+        charged and whether the loan defaulted, so the loop is sitting right there in
+        the numbers.</p>
       </div>
     </div>
   </div>
@@ -206,9 +215,9 @@ footer{padding:34px clamp(26px,6vw,120px); border-top:1px solid var(--border); d
       <div class="card c2">
         <div class="num">2</div>
         <h4>The money runs out</h4>
-        <p>Banks have to set money aside for safety, and there is only so much of it.
-        Lend too fast early on and you have nothing left when better borrowers show up
-        later. Losses eat into it too.</p>
+        <p>Safety money is tied up while a loan is live and frees up only when it
+        finishes. Lend too fast early and you have nothing left when good applicants
+        show up later.</p>
       </div>
       <div class="card c3">
         <div class="num">3</div>
@@ -221,21 +230,21 @@ footer{padding:34px clamp(26px,6vw,120px); border-top:1px solid var(--border); d
   </div>
 </section>
 
-<!-- THE STORY / FINDINGS -->
+<!-- FINDINGS -->
 <section id="story">
   <div class="fade">
-    <div class="eyebrow">Chapter 3 · what we found</div>
+    <div class="eyebrow">Chapter 3 &middot; what we found</div>
     <h2>First, a risk model that reacts to the price</h2>
     <div class="accent-line"></div>
-    <p>Before anything else we needed a way to guess risk that actually responds to
-    the rate. We built one on a thousand real loan records, then checked two things.
-    Does it match what really happened, and does a higher rate really raise the
-    predicted risk?</p>
-    <div class="fig"><img src="figures/pd_model.png" alt="The risk model matches reality and reacts to the price" />
-      <div class="fig-cap"><b>Left:</b> when the model says a group is risky, that
-      group really did miss payments more often, so the model is trustworthy.
-      <b>Right:</b> raising the rate lifts the predicted risk. The flat grey line is
-      the old way, which pretends the rate does not matter.</div>
+    <p>We built a risk model on the real loans and checked two things. Does it match
+    what really happened, and does a higher rate really raise the predicted risk?
+    Because the data records the actual rate and the actual outcome, the second part
+    is learned, not assumed.</p>
+    <div class="fig"><img src="figures/pd_model.png" alt="A risk model that matches reality and reacts to the price" />
+      <div class="fig-cap"><b>Left:</b> when the model calls a group risky, that group
+      really did default more often. It is a weak model (about 0.61 AUC), and the chart
+      is honest about that. <b>Right:</b> a higher offered rate raises predicted risk.
+      The flat line is the old way, which pretends the rate does not matter.</div>
     </div>
   </div>
 </section>
@@ -245,24 +254,24 @@ footer{padding:34px clamp(26px,6vw,120px); border-top:1px solid var(--border); d
     <div class="eyebrow">What we found</div>
     <h2>So should the bank charge less? Mostly not.</h2>
     <div class="accent-line"></div>
-    <p>This was the big question, and the honest answer surprised us. If charging less
-    keeps people from defaulting, maybe the bank should drop its rates. But a loan
-    earns interest for years, while a default is a one time loss. The years of
-    interest usually win. So the best rate barely moves.</p>
-    <div class="fig"><img src="figures/endogenous_terms.png" alt="The best rate to charge barely moves" />
-      <div class="fig-cap"><b>Left:</b> the best rate to charge stays near the top for
-      most borrowers, even when the rate strongly affects risk. It only drops for the
-      shakiest borrowers. <b>Right:</b> for those shaky borrowers, the most profitable
-      rate slides lower as the rate matters more.</div>
+    <p>This was the big question, and the honest answer surprised us. A loan earns
+    interest for years, while a default is a one-off loss, and the years of interest
+    usually win. So the best rate barely moves for typical borrowers. For the riskiest
+    borrowers it does start to drop, right around the level the real data points to.</p>
+    <div class="fig"><img src="figures/endogenous_terms.png" alt="The best rate to charge mostly stays high" />
+      <div class="fig-cap"><b>Left:</b> the best rate to charge stays at the top for
+      most borrowers, and only bends down for the riskiest ones, near the real-data
+      level. <b>Right:</b> for those risky borrowers, the most profitable rate slides
+      lower as the rate matters more.</div>
     </div>
     <div class="callout">
       <div class="ic">💡</div>
       <div>
         <h4>The honest takeaway</h4>
-        <p>At the level the real data points to, charging less to lower risk does not
-        pay off on price. A plain bank that just charges the going rate is close to
-        right. The interesting payoff shows up somewhere else, in who gets a loan and
-        how the bank balances its goals.</p>
+        <p>Charging less to lower risk is on the edge of mattering for risky borrowers,
+        but not a dramatic effect overall. A plain bank that just charges the going
+        rate is close to right on price. The real payoff is elsewhere, in who gets a
+        loan and how the bank balances its goals.</p>
       </div>
     </div>
   </div>
@@ -274,14 +283,14 @@ footer{padding:34px clamp(26px,6vw,120px); border-top:1px solid var(--border); d
     <h2>Every strategy gives something up</h2>
     <div class="accent-line"></div>
     <p>We let a computer try thousands of lending strategies and kept the best ones.
-    No single strategy wins on everything. Each one trades profit against risk,
-    against the safety cushion, against fairness. The two usual approaches show up as
-    single dots, and you can see exactly what each one quietly gives away.</p>
+    No single strategy wins on everything. Each one trades profit against risk, against
+    the safety cushion, against fairness. The two usual approaches show up as single
+    dots, and you can see exactly what each one quietly gives away.</p>
     <div class="fig"><img src="figures/pareto_front.png" alt="Every strategy trades one goal against another" />
-      <div class="fig-cap"><b>The dots toward the top right are the good strategies.</b>
-      The orange star is the usual bank approach. It gets beaten on every goal at once.
-      The purple cross chases profit only, and pays for it with bumpier losses and a
-      bigger safety bill. Lighter colours are fairer.</div>
+      <div class="fig-cap"><b>The dots toward the bottom right are the good strategies.</b>
+      The orange star is the usual bank approach, and it gets beaten on every goal at
+      once. The purple cross chases profit only, and pays with bumpier losses. Lighter
+      colours are fairer.</div>
     </div>
   </div>
 </section>
@@ -289,15 +298,15 @@ footer{padding:34px clamp(26px,6vw,120px); border-top:1px solid var(--border); d
 <section class="alt">
   <div class="fade">
     <div class="eyebrow">What we found</div>
-    <h2>Watching it play out over time</h2>
+    <h2>Watching it play out over months</h2>
     <div class="accent-line"></div>
     <p>Because the bank lends month after month, it helps to watch the strategies run.
-    The grabby ones lend fast, pile up losses, and burn through their safety money. The
+    The grabby ones tie up all their safety money early and pile up losses. The
     balanced ones pace themselves and stay in much better shape.</p>
     <div class="fig"><img src="figures/portfolio_trajectories.png" alt="How each strategy plays out month by month" />
-      <div class="fig-cap">The usual approach (orange) and the profit chaser (purple)
-      rack up the most losses. Our balanced and fair strategies keep losses low and
-      hold onto their safety cushion.</div>
+      <div class="fig-cap">The usual approach and the profit chaser rack up the most
+      losses. The balanced and fair strategies keep losses low and hold onto their
+      safety cushion.</div>
     </div>
   </div>
 </section>
@@ -307,13 +316,13 @@ footer{padding:34px clamp(26px,6vw,120px); border-top:1px solid var(--border); d
     <div class="eyebrow">What we found</div>
     <h2>What does fairness cost?</h2>
     <div class="accent-line"></div>
-    <p>One of the goals is treating different groups of applicants equally. We can
-    measure how much profit the bank gives up to close that gap. It turns out you can
-    get all the way to equal treatment for a real but limited cost.</p>
+    <p>One of the goals is treating different groups of applicants equally. The data
+    has no information on age, sex, or race, so we use income as a stand-in for access,
+    and ask whether lower- and higher-income applicants get approved at similar rates.</p>
     <div class="fig"><img src="figures/fairness_return_frontier.png" alt="What fairness costs the bank" />
-      <div class="fig-cap">Moving left means treating the two groups more equally, and
-      it costs some profit. The usual bank approach (orange star) sits below the line,
-      which means it is unfair <b>and</b> leaving money on the table.</div>
+      <div class="fig-cap">Moving left means treating the two income groups more equally,
+      and it costs some profit. The usual bank approach (orange star) sits below the
+      line, which means it is unfair <b>and</b> leaving money on the table.</div>
     </div>
   </div>
 </section>
@@ -327,11 +336,11 @@ footer{padding:34px clamp(26px,6vw,120px); border-top:1px solid var(--border); d
     <p class="big-p">A portfolio piece is more useful when it owns its limits, so here
     they are in plain terms.</p>
     <ol class="lim">
-      <li><span class="n">1</span><span><strong>Charging less did not really help.</strong> The years of interest a good loan earns outweigh the odd default, so the best price barely moves. The clever loop matters for who gets a loan, not for the rate.</span></li>
+      <li><span class="n">1</span><span><strong>Charging less mostly did not move the price.</strong> The years of interest a good loan earns outweigh the odd default, so the best rate stays high. It only bends for the riskiest borrowers. The clever loop matters more for who gets a loan than for the rate.</span></li>
       <li><span class="n">2</span><span><strong>The simple approach often ties the fancy one.</strong> If a bank only cares about profit, the plain profit chaser already does great. The extra machinery earns its keep only when you care about more than one goal.</span></li>
-      <li><span class="n">3</span><span><strong>We measured a link, not proof.</strong> The connection between rate and risk comes from past data, not a controlled test. We treat it as a careful estimate and check what happens if it is stronger or weaker.</span></li>
-      <li><span class="n">4</span><span><strong>The data is a stand in.</strong> We used a thousand real consumer loans from an old public dataset, plus real Irish averages for scale. It is a fair sketch of the problem, not a live mortgage book. The exact numbers are illustrations.</span></li>
-      <li><span class="n">5</span><span><strong>Fairness here is narrow.</strong> We only check whether two groups get approved at similar rates. That is a starting point, not the whole of fair lending.</span></li>
+      <li><span class="n">3</span><span><strong>We measured a link, not proof.</strong> The bank set the rate from risk, so the rate-default link is confounded. We control for the obvious risk drivers and stress-test the rest, but it is an association, not a clean cause.</span></li>
+      <li><span class="n">4</span><span><strong>No demographic data.</strong> We can only check access by income, not by protected characteristics. That is a real limit of this dataset.</span></li>
+      <li><span class="n">5</span><span><strong>It is a sampling method, not reinforcement learning.</strong> Random search, then a small genetic refinement, with each strategy scored by simulation. We are careful not to oversell it.</span></li>
     </ol>
   </div>
 </section>
@@ -342,11 +351,12 @@ footer{padding:34px clamp(26px,6vw,120px); border-top:1px solid var(--border); d
     <div class="eyebrow">Where the numbers come from</div>
     <h2>Real data, nothing made up</h2>
     <div class="accent-line"></div>
-    <p>Every number traces back to a real public source. Two of them, for two jobs.</p>
+    <p>Every number traces back to a real public source. The loan-level data carries
+    both the rate and the outcome, which is the whole point.</p>
     <div class="chips">
-      <span class="chip"><span class="d" style="background:var(--teal)"></span><strong>1,000 real loan records</strong> from a public university dataset, used to learn risk</span>
-      <span class="chip"><span class="d" style="background:var(--orange)"></span><strong>Central Bank of Ireland averages</strong> for arrears and mortgage rates, used to set the scale</span>
-      <span class="chip"><span class="d" style="background:var(--violet)"></span><strong>No private or made up data</strong> anywhere</span>
+      <span class="chip"><span class="d" style="background:var(--teal)"></span><strong>9,578 real Lending Club loans</strong> (2007 to 2011), with rate and outcome</span>
+      <span class="chip"><span class="d" style="background:var(--orange)"></span><strong>Central Bank of Ireland</strong> figures for real-world context (end-2025)</span>
+      <span class="chip"><span class="d" style="background:var(--violet)"></span><strong>Nothing private or made up</strong> anywhere</span>
     </div>
   </div>
 </section>
@@ -370,9 +380,9 @@ footer{padding:34px clamp(26px,6vw,120px); border-top:1px solid var(--border); d
 <footer>
   <div class="footer-brand">When the price of a loan <em>changes</em> the risk</div>
   <div class="footer-links">
-    <a href="https://github.com/rishikeshgovind" target="_blank" rel="noopener">Code</a>
-    <a href="https://www.centralbank.ie/statistics/data-and-analysis/credit-and-banking-statistics/mortgage-arrears" target="_blank" rel="noopener">Irish loan data</a>
-    <a href="https://archive.ics.uci.edu/dataset/144/statlog+german+credit+data" target="_blank" rel="noopener">The loan records</a>
+    <a href="https://github.com/RishikeshGovind/credit-mdp" target="_blank" rel="noopener">Code</a>
+    <a href="https://www.centralbank.ie/statistics/data-and-analysis/credit-and-banking-statistics/mortgage-arrears" target="_blank" rel="noopener">Irish context data</a>
+    <a href="https://github.com/RishikeshGovind/credit-mdp/blob/main/data/PROVENANCE.md" target="_blank" rel="noopener">Where the data is from</a>
   </div>
 </footer>
 

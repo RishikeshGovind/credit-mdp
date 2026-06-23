@@ -1,33 +1,33 @@
 """Decision-dependent probability-of-default (PD) model.
 
-A transparent logistic-regression PD model fit on the **real** German credit data.
-The novelty for this project is not the classifier but the *decision-dependent* head:
-the interest rate the lender offers changes the borrower's payment burden, which
-changes the predicted PD **through a coefficient estimated from real default
-outcomes** (the "installment rate in percentage of disposable income" feature).
+A transparent logistic-regression PD model fit on **real, resolved** Lending Club
+loans. The point of interest is the *decision-dependent* head: because the data
+contains the interest rate actually charged (``int_rate``) alongside the outcome
+(``default``), the link between the rate and default is **estimated directly from the
+data**, not engineered.
 
-Channel, made explicit (see ``METHODS.md``):
+Decision-dependence, made explicit (see ``METHODS.md``):
 
-    burden(rate) = burden_0 * annuity_factor(rate, n) / annuity_factor(rate_0, n)
-    effective_burden = burden_0 + kappa * (burden(rate) - burden_0)
-    PD = logistic_model(features with installment_rate replaced by effective_burden)
+    effective_rate = observed_rate + kappa * (offered_rate - observed_rate)
+    PD = logistic_model(features with int_rate set to effective_rate)
 
-* ``burden_0`` is the borrower's observed installment-rate-% (real data).
-* ``rate_0`` is the assumed baseline rate at which that burden was observed
-  (set to the CBI average new-mortgage rate, since the dataset has no rate field).
-* The *sensitivity of PD to burden* is the model's estimated coefficient (real data).
-* The *mapping from rate to burden* is standard annuity arithmetic.
-* ``kappa`` is the explicit decision-dependence knob: kappa=0 reproduces a
-  terms-independent (myopic) PD; kappa=1 is the data-anchored case; kappa>1
-  amplifies the feedback for the sensitivity experiment.
+* ``kappa = 0`` uses each borrower's observed rate, so the offer does not move PD
+  (this is the myopic, terms-independent view).
+* ``kappa = 1`` prices fully at the offered rate, so the offer moves PD through the
+  rate coefficient learned from real defaults.
+* ``kappa > 1`` amplifies the link for the sensitivity experiment.
 
-Limitations are stated honestly in ``METHODS.md`` and ``README.md``: the coefficient
-is *associational*, not a causal estimate of a rate intervention.
+**Honest caveat (confounding).** Lending Club set the rate from its own risk view, so
+the rate coefficient is confounded upward by risk-based pricing even after we control
+for FICO, DTI, income and so on. We treat it as an *association*, not a causal rate
+effect, and stress-test it with ``kappa``. The protected/access group (income) is
+never a model input.
 """
 
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -39,115 +39,79 @@ from sklearn.model_selection import cross_val_predict
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-import sys
-
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from data.ireland_aggregates import CBI  # noqa: E402
 
-# Protected attribute and target are never used as model inputs.
 TARGET = "default"
-PROTECTED = "sex"
-AFFORDABILITY = "installment_rate_pct_income"
+GROUP = "income_group"           # used for fairness only, never a model input
+RATE = "int_rate"
 
 NUMERIC = [
-    "duration_months", "credit_amount", AFFORDABILITY,
-    "residence_since", "age_years", "existing_credits", "liable_people",
+    RATE, "fico", "dti", "log_annual_inc", "revol_util", "inq_last_6mths",
+    "days_with_cr_line", "revol_bal", "delinq_2yrs", "pub_rec",
 ]
-CATEGORICAL = [
-    "checking_status", "credit_history", "purpose", "savings_status",
-    "employment_since", "other_debtors", "property",
-    "other_installment_plans", "housing", "job", "telephone", "foreign_worker",
-]
+CATEGORICAL = ["purpose", "credit_policy"]
 
-
-def annuity_factor(rate_annual: float, n_months: int) -> float:
-    """Monthly payment per unit principal for an annuity loan (fixed rate)."""
-    i = rate_annual / 12.0
-    n = max(int(n_months), 1)
-    if i <= 0:
-        return 1.0 / n
-    return i / (1.0 - (1.0 + i) ** (-n))
+# Plausible range for the rate fed to the model (the data spans ~6%-22%).
+RATE_MIN, RATE_MAX = 0.05, 0.25
 
 
 @dataclass
 class PDModel:
     """Logistic-regression PD model with a decision-dependent rate head."""
 
-    rate_0: float = CBI.new_mortgage_rate_avg  # baseline rate for observed burden
     pipeline: Pipeline = field(default=None, repr=False)
     cv_auc: float = field(default=float("nan"))
-    # installment_rate is bounded 1..4 in the raw data; we let the decision-
-    # dependent burden roam a little wider but keep it physically sensible.
-    burden_min: float = 1.0
-    burden_max: float = 6.0
 
     def _make_pipeline(self) -> Pipeline:
-        pre = ColumnTransformer(
-            transformers=[
-                ("num", StandardScaler(), NUMERIC),
-                ("cat", OneHotEncoder(handle_unknown="ignore"), CATEGORICAL),
-            ]
-        )
-        clf = LogisticRegression(max_iter=2000, C=1.0)
-        return Pipeline([("pre", pre), ("clf", clf)])
+        pre = ColumnTransformer([
+            ("num", StandardScaler(), NUMERIC),
+            ("cat", OneHotEncoder(handle_unknown="ignore"), CATEGORICAL),
+        ])
+        return Pipeline([("pre", pre),
+                         ("clf", LogisticRegression(max_iter=2000, C=1.0))])
 
     def fit(self, df: pd.DataFrame) -> "PDModel":
         X = df[NUMERIC + CATEGORICAL]
         y = df[TARGET].to_numpy()
         self.pipeline = self._make_pipeline()
         # Honest out-of-sample performance via cross-validated predictions.
-        oof = cross_val_predict(
-            self.pipeline, X, y, cv=5, method="predict_proba"
-        )[:, 1]
+        oof = cross_val_predict(self.pipeline, X, y, cv=5,
+                                method="predict_proba")[:, 1]
         self.cv_auc = float(roc_auc_score(y, oof))
         self.pipeline.fit(X, y)
         return self
 
     # -- prediction -------------------------------------------------------
     def predict_baseline_pd(self, df: pd.DataFrame) -> np.ndarray:
-        """PD at the borrower's observed terms (terms-independent)."""
+        """PD at each borrower's observed rate (terms-independent)."""
         return self.pipeline.predict_proba(df[NUMERIC + CATEGORICAL])[:, 1]
 
-    def burden_under_rate(self, df: pd.DataFrame, rate: float,
-                          kappa: float = 1.0,
-                          tenor_months: int | None = None) -> np.ndarray:
-        """Effective affordability feature if the loan is priced at ``rate``.
-
-        ``tenor_months`` sets the horizon over which the offered rate is applied
-        for the affordability calculation. In the Irish *mortgage* scenario this
-        is the mortgage tenor (e.g. 300 months), not the short consumer-loan
-        duration recorded in the German data; the borrower's risk features are
-        still the real data. If ``None`` the data ``duration_months`` is used.
-        """
-        b0 = df[AFFORDABILITY].to_numpy(dtype=float)
-        n = (np.full(len(df), tenor_months) if tenor_months is not None
-             else df["duration_months"].to_numpy())
-        af_r = np.array([annuity_factor(rate, ni) for ni in n])
-        af_0 = np.array([annuity_factor(self.rate_0, ni) for ni in n])
-        b_rate = b0 * af_r / af_0
-        eff = b0 + kappa * (b_rate - b0)
-        return np.clip(eff, self.burden_min, self.burden_max)
+    def effective_rate(self, df: pd.DataFrame, rate: float,
+                       kappa: float = 1.0) -> np.ndarray:
+        obs = df[RATE].to_numpy(float)
+        eff = obs + kappa * (rate - obs)
+        return np.clip(eff, RATE_MIN, RATE_MAX)
 
     def predict_pd_under_terms(self, df: pd.DataFrame, rate: float,
-                               kappa: float = 1.0,
-                               tenor_months: int | None = None) -> np.ndarray:
-        """Decision-dependent PD: PD if the lender prices the loan at ``rate``."""
+                               kappa: float = 1.0) -> np.ndarray:
+        """Decision-dependent PD if the loan is priced at ``rate``."""
         X = df[NUMERIC + CATEGORICAL].copy()
-        X[AFFORDABILITY] = self.burden_under_rate(df, rate, kappa, tenor_months)
+        X[RATE] = self.effective_rate(df, rate, kappa)
         return self.pipeline.predict_proba(X)[:, 1]
 
     # -- introspection ----------------------------------------------------
     def coefficients(self) -> pd.Series:
-        """Logistic coefficients in transformed feature space (for plotting)."""
-        pre = self.pipeline.named_steps["pre"]
-        names = pre.get_feature_names_out()
+        names = self.pipeline.named_steps["pre"].get_feature_names_out()
         coefs = self.pipeline.named_steps["clf"].coef_.ravel()
         return pd.Series(coefs, index=names).sort_values()
 
+    def rate_coefficient(self) -> float:
+        """Standardised logistic coefficient on the interest rate."""
+        return float(self.coefficients()["num__int_rate"])
 
-def fit_default_model(df: pd.DataFrame, rate_0: float | None = None) -> PDModel:
-    model = PDModel(rate_0=rate_0 if rate_0 is not None else CBI.new_mortgage_rate_avg)
-    return model.fit(df)
+
+def fit_default_model(df: pd.DataFrame) -> PDModel:
+    return PDModel().fit(df)
 
 
 if __name__ == "__main__":
@@ -156,10 +120,12 @@ if __name__ == "__main__":
     df = load_clean()
     m = fit_default_model(df)
     print(f"5-fold cross-validated AUC: {m.cv_auc:.3f}")
+    print(f"Standardised coefficient on the interest rate: {m.rate_coefficient():+.3f} "
+          f"(positive = higher rate predicts more default)")
     base = m.predict_baseline_pd(df)
     print(f"Mean baseline PD: {base.mean():.3f} (data default rate {df.default.mean():.3f})")
-    # Demonstrate decision-dependence on a representative slice.
-    low = m.predict_pd_under_terms(df, rate=0.030, kappa=1.0).mean()
-    high = m.predict_pd_under_terms(df, rate=0.055, kappa=1.0).mean()
-    print(f"Mean PD @3.0% rate: {low:.3f}  |  @5.5% rate: {high:.3f}  "
-          f"(kappa=1) -> delta {high - low:+.3f}")
+    for k in [0, 1, 2]:
+        lo = m.predict_pd_under_terms(df, rate=0.09, kappa=k).mean()
+        hi = m.predict_pd_under_terms(df, rate=0.17, kappa=k).mean()
+        print(f"kappa={k}: mean PD @9% rate={lo:.3f}  @17% rate={hi:.3f}  "
+              f"-> delta {hi - lo:+.3f}")

@@ -144,30 +144,30 @@ def render(out: dict) -> None:
     fig, axes = plt.subplots(1, 2, figsize=(13, 5.4))
 
     def panel(ax, ykey, ylabel, title, invert=True):
-        gx = [d["return"] / 1e6 for d in dom]
+        gx = [d["return"] / 1e3 for d in dom]
         gy = [d[ykey] for d in dom]
         ax.scatter(gx, gy, s=14, color=C.PALETTE["muted"], alpha=0.5,
                    label="other strategies we tried", zorder=1)
-        px = [p["return"] / 1e6 for p in pareto]
+        px = [p["return"] / 1e3 for p in pareto]
         py = [p[ykey] for p in pareto]
         gaps = [p["approval_gap"] for p in pareto]
         sc = ax.scatter(px, py, c=gaps, cmap="viridis_r", s=46,
                         edgecolor="white", linewidth=0.5, zorder=3,
                         label="the best balances")
         # baselines as stars
-        ax.scatter([myo["return"] / 1e6], [myo[ykey]], marker="*", s=420,
+        ax.scatter([myo["return"] / 1e3], [myo[ykey]], marker="*", s=420,
                    color=C.PALETTE["myopic"], edgecolor="black", linewidth=0.7,
                    zorder=5, label="the usual bank approach")
-        ax.scatter([so["return"] / 1e6], [so[ykey]], marker="P", s=200,
+        ax.scatter([so["return"] / 1e3], [so[ykey]], marker="P", s=200,
                    color=C.PALETTE["single_obj"], edgecolor="black", linewidth=0.7,
                    zorder=5, label="chase profit only")
         for rk, col in [("mo_balanced", C.PALETTE["mo_balanced"]),
                         ("mo_fair", C.PALETTE["mo_fair"]),
                         ("mo_lowrisk", C.PALETTE["mo_lowrisk"])]:
             mm = reps[rk]["metrics"]
-            ax.scatter([mm["return"] / 1e6], [mm[ykey]], marker="D", s=70,
+            ax.scatter([mm["return"] / 1e3], [mm[ykey]], marker="D", s=70,
                        color=col, edgecolor="black", linewidth=0.6, zorder=6)
-        ax.set_xlabel("profit the bank makes  (€M, more is better)")
+        ax.set_xlabel("profit the bank makes  ($000s, more is better)")
         ax.set_ylabel(ylabel)
         ax.set_title(title)
         return sc

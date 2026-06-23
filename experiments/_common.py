@@ -88,16 +88,6 @@ def make_env(kappa: float = 1.0, **scenario_overrides) -> LendingMDP:
     return LendingMDP(df, m, sc)
 
 
-def eur(x: float) -> str:
-    """Compact euro formatting (€1.2M, €830k)."""
-    ax = abs(x)
-    if ax >= 1e6:
-        return f"€{x/1e6:.2f}M"
-    if ax >= 1e3:
-        return f"€{x/1e3:.0f}k"
-    return f"€{x:.0f}"
-
-
 def save_json(name: str, obj) -> str:
     path = os.path.join(RESULTS_DIR, name)
     with open(path, "w") as f:

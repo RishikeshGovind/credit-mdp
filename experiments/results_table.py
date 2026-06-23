@@ -26,18 +26,17 @@ def _get(out: dict, path: str) -> dict:
 
 
 def build_table(out: dict) -> str:
-    head = ("| Strategy | Profit (€M) | How bumpy losses are (€k) | "
-            "Worst-case loss (€k) | Safety money used | Share approved | "
-            "Unfairness gap | Profit per safety € |")
-    sep = "|" + "---|" * 8
+    head = ("| Strategy | Profit ($000s) | How bumpy losses are ($000s) | "
+            "Worst-case loss ($000s) | Safety money used | Share approved | "
+            "Unfairness gap |")
+    sep = "|" + "---|" * 7
     lines = [head, sep]
     for path, label in ROWS:
         m = _get(out, path)
         lines.append(
-            f"| {label} | {m['return']/1e6:.2f} | {m['loss_volatility']/1e3:.0f} | "
+            f"| {label} | {m['return']/1e3:.0f} | {m['loss_volatility']/1e3:.0f} | "
             f"{m['loss_cvar95']/1e3:.0f} | {m['capital_utilization']:.2f} | "
-            f"{m['approval_rate']:.2f} | {m['approval_gap']:.3f} | "
-            f"{m['return_on_capital']/1e6:.2f} |")
+            f"{m['approval_rate']:.2f} | {m['approval_gap']:.3f} |")
     return "\n".join(lines)
 
 
@@ -76,23 +75,24 @@ def honest_readout(out: dict) -> str:
         notes.append(
             "- **Even if you only care about profit, the usual approach is not the "
             "best.** The profit chaser beats the usual bank approach on every single "
-            f"goal at once. It makes more money (€{so['return']/1e6:.1f}M vs "
-            f"€{myo['return']/1e6:.1f}M), has steadier losses, uses less safety money, "
-            "and is fairer. The usual fixed cutoff with one flat rate just leaves "
-            "money and fairness behind.")
+            f"goal at once. It makes more money (${so['return']/1e3:.0f}k vs "
+            f"${myo['return']/1e3:.0f}k), has steadier losses, uses no more safety "
+            "money, and is fairer. The usual fixed cutoff with one flat rate just "
+            "leaves money and fairness behind.")
     # Where it merely matches.
     notes.append(
         f"- **Where it just ties.** If profit is the only thing you care about, the "
-        f"profit chaser wins by design (€{so['return']/1e6:.1f}M), and our balanced "
-        f"strategy makes a bit less (€{bal['return']/1e6:.1f}M). On that one number, "
+        f"profit chaser wins by design (${so['return']/1e3:.0f}k), and our balanced "
+        f"strategy makes a bit less (${bal['return']/1e3:.0f}k). On that one number, "
         f"all the extra work buys you nothing.")
     # Where it honestly doesn't help.
     notes.append(
         "- **Where it does not help, honestly.** Charging less to lower risk barely "
-        "changes the best price at the level the real data points to. Years of "
-        "interest on a good loan outweigh a one-off default, so a bank that just "
-        "charges the going rate is close to right on price. The clever loop matters "
-        "for who gets a loan and how much, not for the rate itself.")
+        "changes the best price for typical borrowers. Years of interest on a good "
+        "loan outweigh a one-off default, so a bank that just charges the going rate "
+        "is close to right on price. For the riskiest borrowers it is right on the "
+        "edge of mattering, but the clever loop mostly changes who gets a loan and "
+        "how much, not the rate itself.")
     return "\n".join(notes)
 
 
@@ -102,10 +102,9 @@ def main() -> dict:
     table = build_table(out)
     readout = honest_readout(out)
     md = (table + "\n\n" +
-          "_Profit per safety euro is profit divided by safety money used. "
-          "\"How bumpy losses are\" and \"worst-case loss\" come from running each "
-          "strategy many times. Every strategy faced the exact same applicants._\n\n"
-          + readout + "\n")
+          "_Amounts are in thousands of dollars. \"How bumpy losses are\" and "
+          "\"worst-case loss\" come from running each strategy many times. Every "
+          "strategy faced the exact same applicants._\n\n" + readout + "\n")
     path = C.save_text("results_table.md", md)
     print("\n" + table + "\n")
     print(readout)

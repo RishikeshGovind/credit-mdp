@@ -1,9 +1,13 @@
-"""Load and decode the cached UCI Statlog German Credit data into a clean CSV.
+"""Load and clean the cached Lending Club loan data into a tidy CSV.
 
-Reads the verbatim cached file ``data/raw/german.data`` (see ``data/PROVENANCE.md``)
-and produces ``data/german_credit_clean.csv`` with readable columns, a binary
-``default`` target, a derived ``sex`` protected attribute, and the affordability
-feature kept intact.
+Reads the verbatim cached file ``data/raw/lending_club_loans.csv`` (see
+``data/PROVENANCE.md``) and produces ``data/lending_club_clean.csv`` with readable
+column names, a binary ``default`` target, an estimated loan amount (reconstructed
+from the monthly installment and rate), and an income-based access group used for
+the fairness analysis.
+
+These are real, resolved US Lending Club consumer loans from 2007-2011, so the
+relationship between the interest rate and default is directly present in the data.
 
 Run directly (``python data/load_data.py``) or import :func:`load_clean`.
 """
@@ -12,52 +16,54 @@ from __future__ import annotations
 
 import os
 
+import numpy as np
 import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-RAW = os.path.join(HERE, "raw", "german.data")
-CLEAN = os.path.join(HERE, "german_credit_clean.csv")
+RAW = os.path.join(HERE, "raw", "lending_club_loans.csv")
+CLEAN = os.path.join(HERE, "lending_club_clean.csv")
 
-# Column order in german.data (20 features + target), per data/raw/german.doc.
-RAW_COLS = [
-    "checking_status", "duration_months", "credit_history", "purpose",
-    "credit_amount", "savings_status", "employment_since",
-    "installment_rate_pct_income", "personal_status_sex", "other_debtors",
-    "residence_since", "property", "age_years", "other_installment_plans",
-    "housing", "existing_credits", "job", "liable_people", "telephone",
-    "foreign_worker", "credit_class",
-]
+# Lending Club uses dotted names; map to readable snake_case.
+RENAME = {
+    "credit.policy": "credit_policy",
+    "int.rate": "int_rate",
+    "log.annual.inc": "log_annual_inc",
+    "days.with.cr.line": "days_with_cr_line",
+    "revol.bal": "revol_bal",
+    "revol.util": "revol_util",
+    "inq.last.6mths": "inq_last_6mths",
+    "delinq.2yrs": "delinq_2yrs",
+    "pub.rec": "pub_rec",
+    "not.fully.paid": "default",
+}
+LC_TERM_MONTHS = 36  # the 2007-2011 subset is overwhelmingly 36-month loans
 
-# Decodings we actually use downstream (kept readable; others left as raw codes).
-CHECKING = {"A11": "lt_0", "A12": "0_to_200", "A13": "ge_200", "A14": "none"}
-SAVINGS = {"A61": "lt_100", "A62": "100_500", "A63": "500_1000",
-           "A64": "ge_1000", "A65": "unknown_none"}
-EMPLOYMENT = {"A71": "unemployed", "A72": "lt_1y", "A73": "1_4y",
-              "A74": "4_7y", "A75": "ge_7y"}
-PROPERTY = {"A121": "real_estate", "A122": "life_insurance",
-            "A123": "car_other", "A124": "none"}
-HOUSING = {"A151": "rent", "A152": "own", "A153": "free"}
-# Attribute 9 encodes both marital status and sex; we extract sex only.
-SEX = {"A91": "male", "A92": "female", "A93": "male",
-       "A94": "male", "A95": "female"}
+
+def estimated_loan_amount(installment: np.ndarray, int_rate: np.ndarray) -> np.ndarray:
+    """Reconstruct the original principal from the monthly payment and rate.
+
+    For a fixed annuity loan, principal = installment * (1 - (1+i)^-n) / i, with
+    i the monthly rate and n the term in months. Gives a realistic exposure for
+    each loan (Lending Club does not store the amount in this subset).
+    """
+    i = int_rate / 12.0
+    return installment * (1.0 - (1.0 + i) ** (-LC_TERM_MONTHS)) / i
 
 
 def load_clean(write: bool = False) -> pd.DataFrame:
-    """Return the cleaned German credit dataframe, optionally writing the CSV."""
-    df = pd.read_csv(RAW, sep=r"\s+", header=None, names=RAW_COLS)
+    """Return the cleaned Lending Club dataframe, optionally writing the CSV."""
+    df = pd.read_csv(RAW).rename(columns=RENAME)
 
-    # Target: german.data uses 1 = good, 2 = bad. We model P(default), so bad -> 1.
-    df["default"] = (df["credit_class"] == 2).astype(int)
+    df["annual_inc"] = np.exp(df["log_annual_inc"])
+    df["loan_amount"] = estimated_loan_amount(
+        df["installment"].to_numpy(float), df["int_rate"].to_numpy(float))
 
-    # Readable decodings for the columns the model and fairness analysis use.
-    df["checking_status"] = df["checking_status"].map(CHECKING)
-    df["savings_status"] = df["savings_status"].map(SAVINGS)
-    df["employment_since"] = df["employment_since"].map(EMPLOYMENT)
-    df["property"] = df["property"].map(PROPERTY)
-    df["housing"] = df["housing"].map(HOUSING)
-    df["sex"] = df["personal_status_sex"].map(SEX)
-
-    df = df.drop(columns=["credit_class", "personal_status_sex"])
+    # Access group for the fairness analysis: lower- vs higher-income applicants.
+    # This is a socioeconomic access proxy, not a protected-class label (the data
+    # carries no demographic attributes). Documented in README / METHODS.
+    median_inc = df["annual_inc"].median()
+    df["income_group"] = np.where(df["annual_inc"] < median_inc,
+                                  "lower_income", "higher_income")
 
     if write:
         df.to_csv(CLEAN, index=False)
@@ -68,5 +74,8 @@ if __name__ == "__main__":
     out = load_clean(write=True)
     print(f"Wrote {CLEAN}: {out.shape[0]} rows x {out.shape[1]} cols")
     print(f"Default rate: {out['default'].mean():.3f}")
-    print("Approval-relevant groups (sex):")
-    print(out.groupby("sex")["default"].agg(["count", "mean"]).round(3))
+    print(f"Interest rate range: {out['int_rate'].min():.3f} "
+          f"to {out['int_rate'].max():.3f} (mean {out['int_rate'].mean():.3f})")
+    print(f"Estimated loan amount: median ${out['loan_amount'].median():,.0f}")
+    print("Default rate by income group (the access tension):")
+    print(out.groupby("income_group")["default"].agg(["count", "mean"]).round(3))

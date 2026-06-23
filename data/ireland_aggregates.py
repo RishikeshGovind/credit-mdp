@@ -1,9 +1,10 @@
-"""Real Central Bank of Ireland (CBI) aggregate figures used to calibrate the
-portfolio-level scenario.
+"""Real Central Bank of Ireland (CBI) figures, used as real-world context.
 
-These are *aggregate, public* statistics. They are used only to set realistic scale
-(arrears rate, interest-rate band, portfolio size). No Irish loan-level data is used.
-See ``data/PROVENANCE.md`` for full citations.
+These are aggregate, public statistics. They ground the exercise in a real lending
+market and give a sanity check on the scale of arrears and interest rates. They do
+**not** supply any loan-level data, and (because the loan-level data here is US
+Lending Club consumer credit) they are context, not a tight calibration. See
+``data/PROVENANCE.md`` for full citations and dates.
 """
 
 from __future__ import annotations
@@ -12,35 +13,28 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class IrelandCalibration:
+class IrelandContext:
     """Headline CBI figures, each carrying its own source string."""
 
-    # Residential mortgage arrears, PDH, end-June 2025 (Q2 2025).
-    pdh_accounts_total: int = 702_343
-    pdh_accounts_90d_arrears: int = 24_583
-    pdh_share_90d_arrears: float = 0.035  # 3.5% of all PDH accounts
-    pdh_balance_90d_arrears_share: float = 0.048  # 4.8% of total PDH balance
+    # Residential mortgage arrears, principal dwelling houses (PDH), end-2025.
+    pdh_accounts_total: int = 704_290
+    pdh_accounts_90d_arrears: int = 21_833
+    pdh_share_90d_arrears: float = 0.031          # 3.1% of all PDH accounts
+    long_term_arrears_accounts: int = 16_115       # more than 1 year behind
+    long_term_arrears_share: float = 0.022         # 2.2% of all PDH accounts
     arrears_source: str = (
         "Central Bank of Ireland, Residential Mortgage Arrears and Repossessions "
-        "Statistics, Q2 2025 (end-June 2025)."
+        "Statistics, Q4 2025 (end-December 2025); reported by the Irish Times, "
+        "13 March 2026."
     )
 
-    # Average interest rate on new mortgage agreements, Ireland, Sep 2025.
-    new_mortgage_rate_avg: float = 0.0359  # 3.59%
-    new_mortgage_rate_fixed: float = 0.0351  # 3.51%
-    new_mortgage_rate_variable: float = 0.0408  # 4.08%
-    euro_area_avg_rate: float = 0.0334  # 3.34%
+    # Average interest rate on new mortgage agreements, Ireland, April 2026.
+    new_mortgage_rate_avg: float = 0.035           # 3.5%
+    euro_area_avg_rate: float = 0.0345             # 3.45%
     rate_source: str = (
-        "Central Bank of Ireland, Retail Interest Rates, September 2025."
+        "Central Bank of Ireland, Retail Interest Rates, April 2026; reported by "
+        "RTÉ, 13 May 2026."
     )
 
-    def realistic_rate_band(self) -> tuple[float, float]:
-        """A plausible Irish offered-rate band around the real average.
 
-        Lower bound near the fixed-rate average, upper bound near the variable
-        average, widened modestly to give the lender meaningful pricing choices.
-        """
-        return (0.030, 0.055)
-
-
-CBI = IrelandCalibration()
+CBI = IrelandContext()

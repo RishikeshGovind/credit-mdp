@@ -6,7 +6,7 @@ Two complementary views:
   expected return attainable subject to holding the approval-rate gap at or below
   each level. This is the genuine trade-off surface implied by the policy space.
 * **Mechanism sweep** — take one good policy and dial up only its fairness lever
-  (``theta[3]``), tracing how return falls as the approval gap closes. Confirms the
+  (``theta[2]``), tracing how return falls as the approval gap closes. Confirms the
   frontier is driven by an interpretable knob, not an artefact.
 """
 
@@ -36,7 +36,7 @@ def mechanism_sweep(env, base_theta: np.ndarray) -> dict:
     rets, gaps = [], []
     for o in offsets:
         theta = np.array(base_theta, float).copy()
-        theta[3] = o
+        theta[2] = o
         ev = evaluate_policy(env, ParametricPolicy(theta), "fair-sweep",
                              n_rollouts=64, base_seed=1000)
         rets.append(ev.metrics["return_mean"])
@@ -75,7 +75,7 @@ def render(out: dict) -> None:
     C.apply_style()
     fig, ax = plt.subplots(figsize=(8.2, 5.4))
     gaps = np.array(out["gaps_grid"])
-    frontier = np.array(out["frontier"], float) / 1e6
+    frontier = np.array(out["frontier"], float) / 1e3
 
     ax.plot(gaps, frontier, color=C.PALETTE["pareto"], lw=2.8,
             label="best profit you can get at each fairness level")
@@ -83,7 +83,7 @@ def render(out: dict) -> None:
                     alpha=0.25)
 
     sw_gaps = np.array(out["sweep"]["gaps"])
-    sw_ret = np.array(out["sweep"]["returns"]) / 1e6
+    sw_ret = np.array(out["sweep"]["returns"]) / 1e3
     ax.plot(sw_gaps, sw_ret, color=C.PALETTE["accent"], lw=2.0, ls="--", marker="o",
             ms=5, label="one policy, dialing up fairness")
 
@@ -96,11 +96,11 @@ def render(out: dict) -> None:
               C.PALETTE["mo_balanced"], "D", 80)]
     for grp, key, label, col, mk, sz in marks:
         m = out[grp][key]
-        ax.scatter([m["approval_gap"]], [m["return"] / 1e6], marker=mk, s=sz,
+        ax.scatter([m["approval_gap"]], [m["return"] / 1e3], marker=mk, s=sz,
                    color=col, edgecolor="black", linewidth=0.6, zorder=5, label=label)
 
-    ax.set_xlabel("gap in approval between the two groups  (0 means treated equally)")
-    ax.set_ylabel("profit the bank makes  (€M)")
+    ax.set_xlabel("gap in approval between income groups  (0 means treated equally)")
+    ax.set_ylabel("profit the bank makes  ($000s)")
     ax.set_title("What fairness costs the bank")
     ax.legend(loc="lower right", fontsize=10.5)
     C.savefig(fig, "fairness_return_frontier.png")

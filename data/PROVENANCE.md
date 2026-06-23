@@ -3,57 +3,71 @@
 This project uses **only real, publicly available data**. Nothing here is fabricated.
 Two distinct kinds of real data are used, for two distinct purposes.
 
-## 1. Borrower-level data (drives the default-probability model)
+## 1. Borrower-level data (drives the default model and the rate-risk link)
 
-**Statlog (German Credit Data)** — UCI Machine Learning Repository.
+**Lending Club loan data, 2007-2011 (resolved loans).**
 
-- **Source:** Hofmann, H. (1994). *Statlog (German Credit Data)*. UCI Machine Learning
-  Repository. https://doi.org/10.24432/C5NC77
-- **Direct file used:** `https://archive.ics.uci.edu/ml/machine-learning-databases/statlog/german/german.data`
-  (cached verbatim in [`raw/german.data`](raw/german.data); attribute coding documented in
-  [`raw/german.doc`](raw/german.doc)).
+- **What it is:** 9,578 real US consumer loans issued through Lending Club between
+  2007 and 2011, each one now fully resolved (either paid back in full or charged
+  off). This is the classic 14-column extract widely used in credit-risk teaching.
+- **Original source:** Lending Club, which published its historical loan books
+  publicly for years (the company stopped offering these downloads around 2019).
+- **File used / cache:** downloaded from a pinned GitHub copy and cached verbatim in
+  [`raw/lending_club_loans.csv`](raw/lending_club_loans.csv):
+  `https://raw.githubusercontent.com/MurleePatil/Loan-Repayment-Prediction-with-Random-Forest-classifier/1447803021a1420c6583c712caed5480375bd3a9/Loan_data.csv`
+  (pinned to commit `1447803`).
 - **Downloaded:** 2026-06-23 (UTC).
-- **Licence:** Creative Commons Attribution 4.0 International (CC BY 4.0), per the UCI
-  repository listing.
-- **Size / shape:** 1,000 rows, 20 features + 1 target. Target = credit risk
-  ("good" = 700, "bad" = 300).
+- **Licence:** the underlying loan data was released publicly by Lending Club. There
+  is no formal open licence on this teaching extract, so treat it as public reference
+  data and attribute it to Lending Club.
 
-**Why this dataset.** It is real, openly licensed, directly downloadable without
-registration, and — crucially for this project — it contains two things the modelling needs:
+**Why this dataset.** Unlike most openly downloadable credit datasets, it contains
+**both the loan terms and the outcome**:
 
-1. An **affordability feature**: *"installment rate in percentage of disposable income"*
-   (attribute 8). This lets the interest rate the lender offers feed into default
-   probability through a coefficient **estimated from real default outcomes**, which is what
-   makes the uncertainty genuinely *decision-dependent* rather than assumed.
-2. A **protected attribute**: sex, recoverable from *"personal status and sex"* (attribute 9),
-   which lets us measure approval-rate parity for the fairness objective.
+- `int.rate` — the interest rate actually charged, and
+- `not.fully.paid` — whether the loan defaulted.
 
-**What this dataset is NOT.** It is not Irish, not mortgage-specific, not recent (collected
-pre-1994), and small (n=1,000). It is a *consumer-credit* dataset. We therefore do **not**
-claim Irish loan-level realism. See the Irish grounding below and the limitations section of
-the top-level `README.md`.
+So the relationship between the rate and default is **directly present in the data**,
+not engineered. In the raw data, default rises from about 7% in the lowest rate band
+to about 24% in the highest. It also carries the risk drivers needed to estimate that
+relationship while controlling for risk: `fico`, `dti`, `log.annual.inc`,
+`revol.util`, `inq.last.6mths`, `days.with.cr.line`, `delinq.2yrs`, `pub.rec`,
+`installment`, `purpose`, and `credit.policy`.
 
-## 2. Irish portfolio calibration (aggregate figures only — never loan-level)
+**Important honesty note (confounding).** Lending Club *set* the rate based on its own
+risk assessment, so a higher rate partly reflects that the borrower was already judged
+riskier. The raw rate-default link therefore overstates the causal "cheaper credit is
+safer" effect. We estimate the link **controlling for the risk drivers above**, and we
+still treat the result as an *association*, not a clean causal effect. The decision
+analysis stress-tests this with a strength dial `kappa` (see `METHODS.md`).
 
-To give the simulated portfolio an Irish grounding without claiming Irish loan-level data, the
-scenario is calibrated to **real aggregate statistics from the Central Bank of Ireland (CBI)**.
-These are headline numbers, cited, used only to set portfolio-level scale (arrears rate, rate
-band, portfolio size). They are stored in machine-readable form in
-[`ireland_aggregates.py`](ireland_aggregates.py).
+**What this dataset is NOT.** It is US consumer credit (not mortgages, not Irish), it
+is from 2007-2011, and it carries **no demographic attributes** (no age, sex, or
+race), so it cannot support a protected-class fairness audit. For the access analysis
+we therefore use a socioeconomic proxy: lower- vs higher-income applicants (split at
+the median income). This is clearly labelled as an access measure, not a protected
+attribute.
 
-- **Residential mortgage arrears (PDH), end-June 2025 (Q2 2025):**
-  24,583 principal-dwelling-house (PDH) accounts in arrears over 90 days = **3.5%** of all PDH
-  accounts; ~702,343 total PDH accounts outstanding; outstanding balance in arrears >90 days
-  €5.1bn (4.8% of total PDH balance). Lowest 90-day arrears share since 2009.
-  - Central Bank of Ireland, *Residential Mortgage Arrears and Repossessions Statistics —
-    Q2 2025*. https://www.centralbank.ie/statistics/data-and-analysis/credit-and-banking-statistics/mortgage-arrears
-  - Reported by RTÉ, 26 Sep 2025: https://www.rte.ie/news/business/2025/0926/1535502-central-bank-mortgage-arrears-figures/
+## 2. Irish market context (aggregate figures only, never loan-level)
 
-- **Average interest rate on new mortgage agreements, Ireland, September 2025: 3.59%**
-  (fixed-rate deals 3.51%, variable 4.08%; March 2025 weighted average 3.77%). Among the
-  higher-cost jurisdictions in the euro area (euro-area average 3.34%).
-  - Central Bank of Ireland, *Retail Interest Rates — September 2025*. https://www.centralbank.ie/statistics/data-and-analysis/credit-and-banking-statistics/retail-interest-rates
-  - Reported by RTÉ, 12 Nov 2025: https://www.rte.ie/news/business/2025/1112/1543533-average-interest-rate-on-new-mortgages-moves-higher/
+To ground the exercise in a real lending market we cite **real aggregate statistics
+from the Central Bank of Ireland (CBI)**. These are headline numbers, used as context
+and a sanity check on scale. They supply no loan-level data. Because the loan-level
+data above is US consumer credit, these are context, not a tight calibration. Stored
+in machine-readable form in [`ireland_aggregates.py`](ireland_aggregates.py).
 
-All figures above are aggregate and public. They are used to set realistic defaults for the
-*scale* of the simulation only; no Irish loan-level records are used or implied.
+- **Residential mortgage arrears (PDH), end-2025 (Q4 2025):**
+  21,833 principal-dwelling-house accounts in arrears over 90 days = **3.1%** of all
+  PDH accounts; long-term arrears (more than a year behind) 16,115 accounts (2.2%),
+  down 16% on the year. The lowest 90-day arrears share since the series began in
+  2009.
+  - Central Bank of Ireland, *Residential Mortgage Arrears and Repossessions
+    Statistics, Q4 2025*. https://www.centralbank.ie/statistics/data-and-analysis/credit-and-banking-statistics/mortgage-arrears
+  - Reported by the Irish Times, 13 March 2026: https://www.irishtimes.com/business/2026/03/13/irish-long-term-mortgage-arrears-fall-16/
+
+- **Average interest rate on new mortgage agreements, Ireland, April 2026: 3.5%**
+  (euro-area average 3.45%).
+  - Central Bank of Ireland, *Retail Interest Rates, April 2026*. https://www.centralbank.ie/statistics/data-and-analysis/credit-and-banking-statistics/retail-interest-rates
+  - Reported by RTÉ, 13 May 2026: https://www.rte.ie/news/business/2026/0513/1573145-central-bank-mortgage-rate-figures/
+
+All figures above are aggregate and public.

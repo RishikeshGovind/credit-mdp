@@ -3,7 +3,7 @@
     python run_all.py
 
 Steps (each is independently runnable as ``python -m experiments.<name>``):
-  1. cache & clean the real German credit data
+  1. cache & clean the real Lending Club loan data
   2. PD-model diagnostics            -> figures/pd_model.png
   3. multi-objective solver + baselines -> figures/pareto_front.png
   4. portfolio trajectories          -> figures/portfolio_trajectories.png

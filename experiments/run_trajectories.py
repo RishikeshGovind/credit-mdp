@@ -36,20 +36,20 @@ def render(out: dict, budget: float) -> None:
     for path, label, col, ls in SERIES:
         hist = _get(out, path)["history"]
         periods = [h["period"] for h in hist]
-        cap = [h["capital_used"] / 1e6 for h in hist]
-        loss = [h["cumulative_loss"] / 1e6 for h in hist]
+        cap = [h["capital_used"] / 1e3 for h in hist]
+        loss = [h["cumulative_loss"] / 1e3 for h in hist]
         appr = [h["approval_rate"] for h in hist]
         axes[0].plot(periods, cap, ls, color=col, lw=2.2, marker="o", ms=3, label=label)
         axes[1].plot(periods, loss, ls, color=col, lw=2.2, marker="o", ms=3)
         axes[2].plot(periods, appr, ls, color=col, lw=2.2, marker="o", ms=3)
 
-    axes[0].axhline(budget / 1e6, color=C.PALETTE["muted"], ls=":", lw=1.6)
-    axes[0].text(0, budget / 1e6 * 1.01, "money set aside for safety",
+    axes[0].axhline(budget / 1e3, color=C.PALETTE["muted"], ls=":", lw=1.6)
+    axes[0].text(0, budget / 1e3 * 1.01, "money set aside for safety",
                  color="#8a8275", fontsize=10)
     axes[0].set_title("Safety money tied up")
-    axes[0].set_ylabel("€M")
+    axes[0].set_ylabel("$000s")
     axes[1].set_title("Money lost so far")
-    axes[1].set_ylabel("€M")
+    axes[1].set_ylabel("$000s")
     axes[2].set_title("Share of people approved")
     axes[2].set_ylabel("")
     for ax in axes:
