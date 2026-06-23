@@ -1,14 +1,14 @@
-| Policy | Return (€M) | Loss vol. (€k) | Loss CVaR95 (€k) | Capital util. | Approval rate | Approval gap | Return/capital |
+| Strategy | Profit (€M) | How bumpy losses are (€k) | Worst-case loss (€k) | Safety money used | Share approved | Unfairness gap | Profit per safety € |
 |---|---|---|---|---|---|---|---|
-| Myopic predict-then-threshold | 6.35 | 538 | 4443 | 0.56 | 0.68 | 0.031 | 11.35 |
-| Single-objective (return-max) | 9.43 | 456 | 3815 | 0.50 | 0.64 | 0.014 | 18.92 |
-| MO — balanced (knee) | 6.60 | 138 | 960 | 0.24 | 0.39 | 0.012 | 27.61 |
-| MO — fairness-tilted | 6.16 | 386 | 3098 | 0.43 | 0.60 | 0.000 | 14.44 |
-| MO — risk-averse | 1.36 | 30 | 150 | 0.06 | 0.11 | 0.002 | 21.59 |
+| The usual bank approach | 6.35 | 538 | 4443 | 0.56 | 0.68 | 0.031 | 11.35 |
+| Chase profit only | 9.43 | 456 | 3815 | 0.50 | 0.64 | 0.014 | 18.92 |
+| Our balanced strategy | 6.60 | 138 | 960 | 0.24 | 0.39 | 0.012 | 27.61 |
+| Our fair strategy | 6.16 | 386 | 3098 | 0.43 | 0.60 | 0.000 | 14.44 |
+| Our cautious strategy | 1.36 | 30 | 150 | 0.06 | 0.11 | 0.002 | 21.59 |
 
-_Return on capital = expected return / capital utilisation. Loss volatility and CVaR95 are across rollouts. All policies evaluated on the same applicant stream (common random numbers)._
+_Profit per safety euro is profit divided by safety money used. "How bumpy losses are" and "worst-case loss" come from running each strategy many times. Every strategy faced the exact same applicants._
 
-- **Where the multi-objective view helps:** it surfaces trade-offs the baselines never reveal. The fairness-tilted policy closes the approval gap by 100% relative to the single-objective optimiser (to 0.000) while still approving 60% of applicants, at a 35% cost in return. The MO front spans 0.52 of the normalised objective hypervolume, versus 0.02 (single-objective) and 0.00 (myopic) for the baseline points alone.
-- **Where the structured search helps even a return-only lender:** the optimised single-objective policy *Pareto-dominates* the myopic predict-then-threshold baseline on all four objectives at once — higher return (€9.4M vs €6.4M), lower loss volatility, lower capital use and a smaller approval gap. The textbook fixed break-even threshold with flat pricing simply leaves money and fairness on the table.
-- **Where it merely matches:** on raw expected return the single-objective optimiser is best by construction (€9.4M); the balanced MO policy earns less (€6.6M). A lender who genuinely only cares about return should use the simpler optimiser — the extra machinery buys nothing on that single axis.
-- **Where it does not help (honest):** the decision-dependent *pricing* channel is second-order at the data-anchored sensitivity (κ=1) — the multi-year interest margin dominates a one-off default loss, so a price-taking lender is close to optimal on price (see the sensitivity figure). The endogenous-default story matters for *who* and *how much* to lend (access, leverage, capital) far more than for the headline rate.
+- **Where balancing goals helps.** Our fair strategy closes the unfairness gap by 100% compared to the profit chaser (down to 0.000), and it still approves 60% of people. That costs about 35% of profit. None of the simple approaches give you that option, because they only look at one thing.
+- **Even if you only care about profit, the usual approach is not the best.** The profit chaser beats the usual bank approach on every single goal at once. It makes more money (€9.4M vs €6.4M), has steadier losses, uses less safety money, and is fairer. The usual fixed cutoff with one flat rate just leaves money and fairness behind.
+- **Where it just ties.** If profit is the only thing you care about, the profit chaser wins by design (€9.4M), and our balanced strategy makes a bit less (€6.6M). On that one number, all the extra work buys you nothing.
+- **Where it does not help, honestly.** Charging less to lower risk barely changes the best price at the level the real data points to. Years of interest on a good loan outweigh a one-off default, so a bank that just charges the going rate is close to right on price. The clever loop matters for who gets a loan and how much, not for the rate itself.

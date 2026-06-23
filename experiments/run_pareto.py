@@ -147,42 +147,43 @@ def render(out: dict) -> None:
         gx = [d["return"] / 1e6 for d in dom]
         gy = [d[ykey] for d in dom]
         ax.scatter(gx, gy, s=14, color=C.PALETTE["muted"], alpha=0.5,
-                   label="dominated policies", zorder=1)
+                   label="other strategies we tried", zorder=1)
         px = [p["return"] / 1e6 for p in pareto]
         py = [p[ykey] for p in pareto]
         gaps = [p["approval_gap"] for p in pareto]
         sc = ax.scatter(px, py, c=gaps, cmap="viridis_r", s=46,
                         edgecolor="white", linewidth=0.5, zorder=3,
-                        label="Pareto front")
+                        label="the best balances")
         # baselines as stars
         ax.scatter([myo["return"] / 1e6], [myo[ykey]], marker="*", s=420,
                    color=C.PALETTE["myopic"], edgecolor="black", linewidth=0.7,
-                   zorder=5, label="myopic predict-then-threshold")
+                   zorder=5, label="the usual bank approach")
         ax.scatter([so["return"] / 1e6], [so[ykey]], marker="P", s=200,
                    color=C.PALETTE["single_obj"], edgecolor="black", linewidth=0.7,
-                   zorder=5, label="single-objective (return-max)")
+                   zorder=5, label="chase profit only")
         for rk, col in [("mo_balanced", C.PALETTE["mo_balanced"]),
                         ("mo_fair", C.PALETTE["mo_fair"]),
                         ("mo_lowrisk", C.PALETTE["mo_lowrisk"])]:
             mm = reps[rk]["metrics"]
             ax.scatter([mm["return"] / 1e6], [mm[ykey]], marker="D", s=70,
                        color=col, edgecolor="black", linewidth=0.6, zorder=6)
-        ax.set_xlabel("expected return  (€M)")
+        ax.set_xlabel("profit the bank makes  (€M, more is better)")
         ax.set_ylabel(ylabel)
         ax.set_title(title)
         return sc
 
-    panel(axes[0], "loss_volatility", "loss volatility  (€, lower better) ↓",
-          "Return vs risk")
+    panel(axes[0], "loss_volatility", "how bumpy the losses are  (lower is better)",
+          "Profit vs risk")
     sc = panel(axes[1], "capital_utilization",
-               "capital utilisation  (lower better) ↓", "Return vs capital use")
+               "how much of its safety money it uses  (lower is better)",
+               "Profit vs capital used")
     cb = fig.colorbar(sc, ax=axes, fraction=0.035, pad=0.02)
-    cb.set_label("approval-rate gap (lower = fairer)")
+    cb.set_label("unfairness between groups (lighter is fairer)")
 
     handles, labels = axes[0].get_legend_handles_labels()
-    axes[0].legend(handles, labels, loc="upper left", fontsize=8.5)
-    fig.suptitle("Pareto front over four objectives — baselines plotted as points",
-                 fontsize=14, fontweight="bold", y=1.02)
+    axes[0].legend(handles, labels, loc="upper left", fontsize=10)
+    fig.suptitle("Every strategy trades one goal off against another",
+                 fontsize=15.5, fontweight="bold", y=1.02)
     C.savefig(fig, "pareto_front.png")
 
 

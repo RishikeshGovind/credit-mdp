@@ -77,36 +77,32 @@ def render(out: dict) -> None:
     gaps = np.array(out["gaps_grid"])
     frontier = np.array(out["frontier"], float) / 1e6
 
-    ax.plot(gaps, frontier, color=C.PALETTE["pareto"], lw=2.6,
-            label="achievable frontier (best return at gap cap)")
+    ax.plot(gaps, frontier, color=C.PALETTE["pareto"], lw=2.8,
+            label="best profit you can get at each fairness level")
     ax.fill_between(gaps, frontier, frontier.min(), color=C.PALETTE["pareto_fill"],
                     alpha=0.25)
 
     sw_gaps = np.array(out["sweep"]["gaps"])
     sw_ret = np.array(out["sweep"]["returns"]) / 1e6
-    ax.plot(sw_gaps, sw_ret, color=C.PALETTE["accent"], lw=1.8, ls="--", marker="o",
-            ms=4, label="fairness-lever sweep on one policy")
+    ax.plot(sw_gaps, sw_ret, color=C.PALETTE["accent"], lw=2.0, ls="--", marker="o",
+            ms=5, label="one policy, dialing up fairness")
 
-    marks = [("baselines", "myopic", "myopic", C.PALETTE["myopic"], "*", 360),
-             ("baselines", "single_objective", "single-objective",
+    marks = [("baselines", "myopic", "the usual bank approach", C.PALETTE["myopic"], "*", 360),
+             ("baselines", "single_objective", "chase profit only",
               C.PALETTE["single_obj"], "P", 160),
-             ("representatives", "mo_fair", "MO – fairness-tilted",
+             ("representatives", "mo_fair", "our fair strategy",
               C.PALETTE["mo_fair"], "D", 80),
-             ("representatives", "mo_balanced", "MO – balanced",
+             ("representatives", "mo_balanced", "our balanced strategy",
               C.PALETTE["mo_balanced"], "D", 80)]
     for grp, key, label, col, mk, sz in marks:
         m = out[grp][key]
         ax.scatter([m["approval_gap"]], [m["return"] / 1e6], marker=mk, s=sz,
                    color=col, edgecolor="black", linewidth=0.6, zorder=5, label=label)
 
-    ax.set_xlabel("approval-rate gap between sex groups  (0 = full parity) →")
-    ax.set_ylabel("expected return  (€M)")
-    ax.set_title("The cost of access parity")
-    ax.legend(loc="lower right", fontsize=9)
-    fig.text(0.5, -0.02,
-             "Moving left (toward parity) costs return; the gap between the frontier "
-             "and each baseline shows how much access each one trades away.",
-             ha="center", fontsize=8.5, color="#666")
+    ax.set_xlabel("gap in approval between the two groups  (0 means treated equally)")
+    ax.set_ylabel("profit the bank makes  (€M)")
+    ax.set_title("What fairness costs the bank")
+    ax.legend(loc="lower right", fontsize=10.5)
     C.savefig(fig, "fairness_return_frontier.png")
 
 

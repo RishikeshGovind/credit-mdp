@@ -13,11 +13,11 @@ import numpy as np
 from . import _common as C
 
 SERIES = [
-    ("baselines.myopic", "myopic predict-then-threshold", C.PALETTE["myopic"], "--"),
-    ("baselines.single_objective", "single-objective (return-max)",
+    ("baselines.myopic", "the usual bank approach", C.PALETTE["myopic"], "--"),
+    ("baselines.single_objective", "chase profit only",
      C.PALETTE["single_obj"], "--"),
-    ("representatives.mo_balanced", "MO – balanced", C.PALETTE["mo_balanced"], "-"),
-    ("representatives.mo_fair", "MO – fairness-tilted", C.PALETTE["mo_fair"], "-"),
+    ("representatives.mo_balanced", "our balanced strategy", C.PALETTE["mo_balanced"], "-"),
+    ("representatives.mo_fair", "our fair strategy", C.PALETTE["mo_fair"], "-"),
 ]
 
 
@@ -43,19 +43,20 @@ def render(out: dict, budget: float) -> None:
         axes[1].plot(periods, loss, ls, color=col, lw=2.2, marker="o", ms=3)
         axes[2].plot(periods, appr, ls, color=col, lw=2.2, marker="o", ms=3)
 
-    axes[0].axhline(budget / 1e6, color=C.PALETTE["muted"], ls=":", lw=1.4)
-    axes[0].text(0, budget / 1e6 * 1.01, "capital budget", color="#7a7a7a", fontsize=9)
-    axes[0].set_title("Regulatory capital used")
+    axes[0].axhline(budget / 1e6, color=C.PALETTE["muted"], ls=":", lw=1.6)
+    axes[0].text(0, budget / 1e6 * 1.01, "money set aside for safety",
+                 color="#8a8275", fontsize=10)
+    axes[0].set_title("Safety money tied up")
     axes[0].set_ylabel("€M")
-    axes[1].set_title("Cumulative realised losses")
+    axes[1].set_title("Money lost so far")
     axes[1].set_ylabel("€M")
-    axes[2].set_title("Cumulative approval rate")
-    axes[2].set_ylabel("share of applicants approved")
+    axes[2].set_title("Share of people approved")
+    axes[2].set_ylabel("")
     for ax in axes:
-        ax.set_xlabel("period")
-    axes[0].legend(loc="lower right", fontsize=8.5)
-    fig.suptitle("Portfolio trajectories over the lending programme",
-                 fontsize=14, fontweight="bold", y=1.02)
+        ax.set_xlabel("month")
+    axes[0].legend(loc="lower right", fontsize=10)
+    fig.suptitle("How each strategy plays out month by month",
+                 fontsize=15.5, fontweight="bold", y=1.02)
     C.savefig(fig, "portfolio_trajectories.png")
 
 

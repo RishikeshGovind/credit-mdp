@@ -1,182 +1,171 @@
-# Lending as a multi-stage, multi-objective decision under endogenous default
+# When a bank sets your loan, it changes how risky you are
 
-**An applied exploration of decision-focused learning, multi-objective sequential
-decision-making, and decision-dependent (endogenous) uncertainty — on real credit
-data, with honest baselines.**
+A small study, built on real loan data, about a feedback loop most banks ignore.
 
-When a lender sets the terms of a loan — the interest rate, the loan-to-value cap,
-the approval threshold — it does not just *select* a borrower of fixed riskiness. It
-*changes* that riskiness. A lower rate improves affordability and reduces the chance
-of default; it also cuts the margin. So **default probability is endogenous to the
-decision**: it depends on the very terms being chosen.
+Live write-up with all the charts: **https://rishikeshgovind.github.io/credit-mdp/**
 
-The standard pipeline — *predict default, then decide* — ignores this feedback. It
-estimates a default probability as if terms were fixed, then optimises terms against
-that frozen estimate. This project asks a simple question:
+## The idea in one minute
 
-> **If you model the feedback explicitly, and optimise over several competing
-> objectives across time instead of one, do the lending decisions actually change —
-> and by how much?**
+Say a bank is deciding whether to give you a loan, and what interest rate to charge.
+A lower rate is easier to pay back, so you are less likely to miss payments. A higher
+rate earns the bank more each month, but it strains your budget, so you are more
+likely to fall behind.
 
-The answer here is nuanced and, I think, more interesting than a clean "yes":
-modelling the feedback changes *who and how much* to lend (access, leverage,
-capital) much more than it changes the headline *price*, and a single-objective
-optimiser already beats the textbook baseline outright. Details below, including
-where the fancy machinery earns nothing.
+So here is the catch. The rate the bank picks does not just measure your risk. It
+changes it. Most banks ignore this. They guess how risky you are first, as if the
+rate had nothing to do with it, and only then pick the rate.
 
----
+This project takes that loop seriously. It also tries to juggle four goals at once
+instead of one, over many months, with a limited pot of money. Then it asks a plain
+question. Do the bank's decisions actually change, and does it help?
 
-## Why this is genuinely multi-stage, multi-objective, and decision-dependent
+The short answer surprised me. Taking the loop seriously barely changes the best
+**price** to charge. It matters a lot more for **who** gets a loan and how the bank
+balances its goals. And a smarter search beats the usual bank approach outright, even
+when you only care about profit.
 
-* **Decision-dependent.** The terms offered feed an affordability channel that moves
-  predicted default — see `figures/pd_model.png`, where raising the offered rate
-  lifts default probability (`κ=0` flat = the myopic assumption; `κ>0` bends up).
-  The *sensitivity* is a coefficient **estimated from real defaults**, not assumed.
-* **Multi-stage.** Applicants arrive over many periods under a finite capital
-  budget. Approving a loan ties up regulatory capital until it resolves; realised
-  losses erode the capital available to later periods; retained interest rebuilds
-  it. Lending greedily early starves later periods — pacing has value.
-* **Multi-objective.** A lender juggles **expected return**, **portfolio risk /
-  loss volatility**, **regulatory-capital usage**, and **fairness / access** (here,
-  approval-rate parity across sex groups). These genuinely conflict, so the output
-  is a **Pareto front**, not a single "optimal" policy.
+## Why this is harder than it looks
 
-## Real data, properly attributed (never fabricated)
+Three things pull against each other.
 
-* **Borrower behaviour** — UCI *Statlog (German Credit Data)*: 1,000 real
-  consumer-credit records, CC BY 4.0. Drives the PD model.
-* **Irish grounding** — real **Central Bank of Ireland** aggregates (mortgage
-  arrears 3.5% of accounts, Q2 2025; average new-mortgage rate 3.59%) calibrate the
-  *scale* of the simulation. No Irish loan-level data is used or claimed.
+* **The rate moves the risk.** Charge more and you earn more per loan, but you also
+  push some people into missing payments. You can see this in the model itself. In
+  `figures/pd_model.png`, raising the rate lifts the predicted chance of default. The
+  strength of that link is learned from real defaults, not assumed.
+* **The money runs out.** A bank has to set money aside for safety, and there is only
+  so much of it. Lend too fast early and you have nothing left when better borrowers
+  show up later. Losses eat into the pot too, and interest slowly rebuilds it.
+* **There is no single goal.** The bank wants profit, but also steady losses, a safe
+  cushion, and fair treatment of different groups. You cannot max out all four at
+  once. The result is a menu of best trade-offs, not one perfect answer.
 
-Full citations, licences and download dates: [`data/PROVENANCE.md`](data/PROVENANCE.md).
+## Where the numbers come from (nothing made up)
 
----
+Everything traces back to a real public source. Two of them, for two jobs.
 
-## Results
+* **Borrower behaviour.** The UCI Statlog German Credit dataset. 1,000 real loan
+  records, openly licensed. This is what the risk model learns from.
+* **Irish scale.** Real Central Bank of Ireland averages (mortgage arrears at 3.5% of
+  accounts in mid 2025, and an average new mortgage rate of 3.59%) set the size of
+  the simulated loan book. No private or Irish loan-level data is used or claimed.
 
-The five figures and the table below are produced end-to-end by `python run_all.py`
-(fixed seeds, fully reproducible). Methods: [`METHODS.md`](METHODS.md).
+Full sources, licences and download dates are in [`data/PROVENANCE.md`](data/PROVENANCE.md).
 
-### 1. The Pareto front, with baselines as points
-![Pareto front](figures/pareto_front.png)
+## What we found
 
-The multi-objective solver maps the trade-off surface; the two baselines land as
-single points on it. The myopic predict-then-threshold baseline is **dominated**;
-the single-objective optimiser buys high return at the cost of risk and capital.
+All five charts are built from scratch by `python run_all.py` with fixed seeds, so
+you get the same numbers every time. The methods are in [`METHODS.md`](METHODS.md).
 
-### 2. The core insight — endogenous default bends the optimal price
-![Endogenous terms](figures/endogenous_terms.png)
+### 1. A risk model that reacts to the price
+![Risk model](figures/pd_model.png)
 
-As default becomes more responsive to terms (`κ`), the return-maximising rate bends
-**below** the ceiling a myopic lender would charge. *Honest read:* at the
-data-anchored sensitivity this effect is second-order for pricing — the multi-year
-margin dominates a one-off default loss — and only bites for marginal, high-LTV
-borrowers or stronger feedback.
+Left: when the model says a group is risky, that group really did miss payments more
+often, so the model can be trusted. Right: a higher rate raises the predicted risk.
+The flat grey line is the old way, which pretends the rate does not matter.
 
-### 3. Portfolio trajectories over time
+### 2. Should the bank charge less? Mostly not
+![Best rate](figures/endogenous_terms.png)
+
+This was the big question. If charging less keeps people from defaulting, maybe the
+bank should drop its rates. But a loan earns interest for years, while a default is a
+one-off loss. The years of interest usually win, so the best rate barely moves. It
+only drops for the shakiest borrowers. This is the honest, slightly anticlimactic
+heart of the project.
+
+### 3. Every strategy gives something up
+![Trade-offs](figures/pareto_front.png)
+
+We let a computer try thousands of lending strategies and kept the best ones. No
+single strategy wins on everything. The usual bank approach (orange star) gets beaten
+on every goal at once. The profit chaser (purple cross) makes the most money but pays
+with bumpier losses and a bigger safety bill. Lighter colours are fairer.
+
+### 4. Watching it play out over months
 ![Trajectories](figures/portfolio_trajectories.png)
 
-Capital usage, cumulative losses, and approval rate period by period. Greedy
-baselines accumulate losses; the paced multi-objective policies stay capital-efficient.
+Because the bank lends month after month, it helps to watch the strategies run. The
+grabby ones pile up losses and burn through their safety money. The balanced ones
+pace themselves and stay in much better shape.
 
-### 4. The cost of access parity
-![Fairness frontier](figures/fairness_return_frontier.png)
+### 5. What does fairness cost?
+![Fairness](figures/fairness_return_frontier.png)
 
-How much expected return you give up to close the approval-rate gap between groups.
-Full parity is reachable here at a real but bounded return cost; the baselines sit
-at different points on (or below) this frontier.
+One goal is treating different groups of applicants equally. You can get all the way
+to equal treatment for a real but limited cost in profit. The usual bank approach
+sits below the line, which means it is unfair and leaving money on the table at the
+same time.
 
-### 5. The decision-dependent PD model
-![PD model](figures/pd_model.png)
-
-Calibrated out-of-sample on the real data (left); the offered rate genuinely moves
-predicted default through affordability (right).
-
-### Results table
+### The numbers, side by side
 
 <!-- RESULTS:START -->
 
-| Policy | Return (€M) | Loss vol. (€k) | Loss CVaR95 (€k) | Capital util. | Approval rate | Approval gap | Return/capital |
+| Strategy | Profit (€M) | How bumpy losses are (€k) | Worst-case loss (€k) | Safety money used | Share approved | Unfairness gap | Profit per safety € |
 |---|---|---|---|---|---|---|---|
-| Myopic predict-then-threshold | 6.35 | 538 | 4443 | 0.56 | 0.68 | 0.031 | 11.35 |
-| Single-objective (return-max) | 9.43 | 456 | 3815 | 0.50 | 0.64 | 0.014 | 18.92 |
-| MO — balanced (knee) | 6.60 | 138 | 960 | 0.24 | 0.39 | 0.012 | 27.61 |
-| MO — fairness-tilted | 6.16 | 386 | 3098 | 0.43 | 0.60 | 0.000 | 14.44 |
-| MO — risk-averse | 1.36 | 30 | 150 | 0.06 | 0.11 | 0.002 | 21.59 |
+| The usual bank approach | 6.35 | 538 | 4443 | 0.56 | 0.68 | 0.031 | 11.35 |
+| Chase profit only | 9.43 | 456 | 3815 | 0.50 | 0.64 | 0.014 | 18.92 |
+| Our balanced strategy | 6.60 | 138 | 960 | 0.24 | 0.39 | 0.012 | 27.61 |
+| Our fair strategy | 6.16 | 386 | 3098 | 0.43 | 0.60 | 0.000 | 14.44 |
+| Our cautious strategy | 1.36 | 30 | 150 | 0.06 | 0.11 | 0.002 | 21.59 |
 
-_Return on capital = expected return / capital utilisation. Loss volatility and CVaR95 are across rollouts. All policies evaluated on the same applicant stream (common random numbers)._
+_Profit per safety euro is profit divided by safety money used. "How bumpy losses are" and "worst-case loss" come from running each strategy many times. Every strategy faced the exact same applicants._
 
-- **Where the multi-objective view helps:** it surfaces trade-offs the baselines never reveal. The fairness-tilted policy closes the approval gap by 100% relative to the single-objective optimiser (to 0.000) while still approving 60% of applicants, at a 35% cost in return. The MO front spans 0.52 of the normalised objective hypervolume, versus 0.02 (single-objective) and 0.00 (myopic) for the baseline points alone.
-- **Where the structured search helps even a return-only lender:** the optimised single-objective policy *Pareto-dominates* the myopic predict-then-threshold baseline on all four objectives at once — higher return (€9.4M vs €6.4M), lower loss volatility, lower capital use and a smaller approval gap. The textbook fixed break-even threshold with flat pricing simply leaves money and fairness on the table.
-- **Where it merely matches:** on raw expected return the single-objective optimiser is best by construction (€9.4M); the balanced MO policy earns less (€6.6M). A lender who genuinely only cares about return should use the simpler optimiser — the extra machinery buys nothing on that single axis.
-- **Where it does not help (honest):** the decision-dependent *pricing* channel is second-order at the data-anchored sensitivity (κ=1) — the multi-year interest margin dominates a one-off default loss, so a price-taking lender is close to optimal on price (see the sensitivity figure). The endogenous-default story matters for *who* and *how much* to lend (access, leverage, capital) far more than for the headline rate.
+- **Where balancing goals helps.** Our fair strategy closes the unfairness gap by 100% compared to the profit chaser (down to 0.000), and it still approves 60% of people. That costs about 35% of profit. None of the simple approaches give you that option, because they only look at one thing.
+- **Even if you only care about profit, the usual approach is not the best.** The profit chaser beats the usual bank approach on every single goal at once. It makes more money (€9.4M vs €6.4M), has steadier losses, uses less safety money, and is fairer. The usual fixed cutoff with one flat rate just leaves money and fairness behind.
+- **Where it just ties.** If profit is the only thing you care about, the profit chaser wins by design (€9.4M), and our balanced strategy makes a bit less (€6.6M). On that one number, all the extra work buys you nothing.
+- **Where it does not help, honestly.** Charging less to lower risk barely changes the best price at the level the real data points to. Years of interest on a good loan outweigh a one-off default, so a bank that just charges the going rate is close to right on price. The clever loop matters for who gets a loan and how much, not for the rate itself.
 
 <!-- RESULTS:END -->
 
----
+## What surprised us, and where this is weak
 
-## Limitations, and what didn't work
+A portfolio piece is more useful when it owns its limits. Here they are in plain terms.
 
-This is a portfolio exploration, not a production system or a novel method. Being
-explicit about the soft spots:
+1. **Charging less did not really help.** The years of interest a good loan earns
+   outweigh the odd default, so the best price barely moves. The clever loop matters
+   for who gets a loan, not for the rate. That is a real and slightly surprising
+   result, just not the dramatic "everything changes" one you might hope for.
+2. **The simple approach often ties the fancy one.** If a bank only cares about
+   profit, the plain profit chaser already does great. The extra machinery earns its
+   keep only when you care about more than one goal.
+3. **We measured a link, not proof.** The connection between rate and risk comes from
+   past data, not a controlled experiment. We treat it as a careful estimate and
+   check what happens if it is stronger or weaker.
+4. **The data is a stand-in.** A thousand old consumer loans stand in for mortgage
+   behaviour, and the Irish numbers are averages for scale. It is a fair sketch of
+   the problem, not a live mortgage book. The exact euro amounts are illustrations.
+5. **Fairness here is narrow.** We only check whether two groups get approved at
+   similar rates. That is a starting point, not the whole of fair lending. Pushing on
+   it too hard can also collapse into "approve almost no one", which we guard against.
+6. **The search is approximate.** We try many simple, readable strategies rather than
+   training a heavy model. A richer method would likely find slightly better
+   trade-offs. The goal here was something you can read and trust.
 
-* **The decision-dependent *pricing* effect is second-order at the data-anchored
-  sensitivity.** With realistic multi-year mortgage margins, the interest a
-  surviving loan earns dwarfs a one-off default loss, so the return-maximising rate
-  sits near the ceiling even when default responds to terms. A *price-taking* lender
-  is close to optimal on price. The endogenous story matters for **access, leverage
-  and capital** decisions far more than for the headline rate — which is itself a
-  worthwhile, non-obvious finding, but not the dramatic "everything changes" result
-  one might hope for. (See figure 2.)
-* **A simpler baseline does just as well on its own axis.** On raw expected return,
-  the single-objective optimiser is best by construction; the multi-objective
-  machinery buys nothing if a lender genuinely cares about only one objective. Its
-  value is *exposing the trade-off*, not beating return.
-* **The default-sensitivity coefficient is associational, not causal.** It is
-  estimated from observational data; we treat it as a transparent, data-anchored
-  sensitivity and stress-test it with `κ` rather than claiming a causal rate effect.
-* **The data are a proxy.** German consumer credit (pre-1994, n=1,000) stands in for
-  mortgage borrower behaviour; the Irish grounding is aggregate calibration only.
-  Magnitudes are illustrative.
-* **The "fairness" measure is deliberately narrow** — approval-rate parity across a
-  binary sex attribute. It is a starting point, not a complete treatment of lending
-  fairness, and naive optimisation of it can degenerate into "approve almost no-one"
-  (we guard against that when selecting representative policies).
-* **The solver is approximate.** Sampling-based search over a low-dimensional,
-  interpretable policy class — chosen for transparency over raw performance. A
-  richer policy class or a proper multi-objective RL method would likely push the
-  front out further; the point here was readability and honest comparison.
-* **Capital and LGD dynamics are simplified** Basel-flavoured caricatures, not a
-  real regulatory-capital model.
-
----
-
-## Reproduce it
+## Run it yourself
 
 ```bash
 pip install -r requirements.txt
-python run_all.py          # ~1-2 min; writes figures/ and the results table
+python run_all.py
 ```
 
-Each step is independently runnable, e.g. `python -m experiments.run_pareto`.
-The raw data is cached in `data/raw/`; nothing fetches the network at run time.
+It takes about a minute and rebuilds every chart from scratch. Each step also runs on
+its own, for example `python -m experiments.run_pareto`. The data is cached in
+`data/raw/`, so nothing touches the internet while it runs.
 
-## Repository layout
+## What is in here
 
 ```
-data/        real data (cached), provenance, CBI calibration, loader
-model/       decision-dependent probability-of-default model
-solver/      generic MDP interface, lending environment, MO solver, baselines, Pareto utils
-experiments/ one script per figure + the results table
-figures/     generated figures (committed for GitHub Pages)
-docs/        index.html for GitHub Pages
-run_all.py   reproduce everything with fixed seeds
-METHODS.md   the model, the MDP formulation, the solver
+data/        the real data (cached), where it came from, and the loader
+model/       the risk model that reacts to the price
+solver/      the lending simulation, the search, and the simple baselines
+experiments/ one script per chart, plus the results table
+figures/     the charts (also used by the web page)
+docs/        the web page for GitHub Pages
+run_all.py   rebuilds everything with fixed seeds
+METHODS.md   how the model, the simulation, and the search work
 ```
 
-## Licence and attribution
+## Licence and credit
 
-Code released under the MIT licence. The German Credit data is © its authors under
-CC BY 4.0 (see `data/PROVENANCE.md`); Central Bank of Ireland figures are public
-statistics, cited there. Please retain attributions if you reuse this.
+The code is MIT licensed. The German Credit data belongs to its authors under CC BY
+4.0, and the Central Bank of Ireland figures are public statistics. Both are credited
+in [`data/PROVENANCE.md`](data/PROVENANCE.md). Please keep the credits if you reuse this.

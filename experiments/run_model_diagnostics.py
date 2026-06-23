@@ -53,32 +53,27 @@ def render(d: dict) -> None:
     C.apply_style()
     fig, (ax, ax2) = plt.subplots(1, 2, figsize=(12.4, 5.0))
 
-    ax.plot([0, 0.7], [0, 0.7], ls=":", color=C.PALETTE["muted"], lw=1.4,
-            label="perfect calibration")
-    ax.plot(d["pred_mean"], d["obs_mean"], "o-", color=C.PALETTE["pareto"], lw=2.2,
-            ms=6, markeredgecolor="white", label="model (5-fold OOF)")
-    ax.set_xlabel("mean predicted PD (decile)")
-    ax.set_ylabel("observed default rate")
-    ax.set_title(f"Calibration on real data — AUC = {d['auc']:.3f}")
+    ax.plot([0, 0.7], [0, 0.7], ls=":", color=C.PALETTE["muted"], lw=1.6,
+            label="a perfect model")
+    ax.plot(d["pred_mean"], d["obs_mean"], "o-", color=C.PALETTE["pareto"], lw=2.4,
+            ms=7, markeredgecolor="white", label="our model")
+    ax.set_xlabel("risk the model predicted")
+    ax.set_ylabel("how often they actually defaulted")
+    ax.set_title(f"The model matches reality (AUC = {d['auc']:.3f})")
     ax.legend(loc="upper left")
 
     cols = ["#264653", "#2a9d8f", "#f4a261", "#e76f51"]
     rates = np.array(d["rates"]) * 100
     for (k, ys), col in zip(d["pd_curves"].items(), cols):
-        ax2.plot(rates, np.array(ys) * 100, color=col, lw=2.3, label=f"κ = {k}")
-    ax2.set_xlabel("offered rate  (%)")
-    ax2.set_ylabel("mean predicted default probability  (%)")
-    ax2.set_title("Terms move default (marginal pool)")
-    ax2.legend(title="decision-dependence")
+        ax2.plot(rates, np.array(ys) * 100, color=col, lw=2.6, label=f"κ = {k}")
+    ax2.set_xlabel("interest rate the bank offers  (%)")
+    ax2.set_ylabel("chance of missing payments  (%)")
+    ax2.set_title("A higher rate raises the risk")
+    ax2.legend(title="how strongly rate affects risk")
 
-    fig.suptitle("Decision-dependent probability-of-default model",
-                 fontsize=14, fontweight="bold", y=1.0)
+    fig.suptitle("A risk model that reacts to the price",
+                 fontsize=15.5, fontweight="bold", y=1.0)
     fig.subplots_adjust(top=0.85, wspace=0.24)
-    fig.text(0.5, -0.02,
-             "Left: the logistic PD model tracks observed defaults out-of-sample. "
-             "Right: raising the offered rate lifts predicted default via the "
-             "affordability channel — κ=0 is flat (myopic), κ>0 bends upward.",
-             ha="center", fontsize=8.5, color="#666")
     C.savefig(fig, "pd_model.png")
 
 

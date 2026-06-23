@@ -10,11 +10,11 @@ from __future__ import annotations
 from . import _common as C
 
 ROWS = [
-    ("baselines.myopic", "Myopic predict-then-threshold"),
-    ("baselines.single_objective", "Single-objective (return-max)"),
-    ("representatives.mo_balanced", "MO — balanced (knee)"),
-    ("representatives.mo_fair", "MO — fairness-tilted"),
-    ("representatives.mo_lowrisk", "MO — risk-averse"),
+    ("baselines.myopic", "The usual bank approach"),
+    ("baselines.single_objective", "Chase profit only"),
+    ("representatives.mo_balanced", "Our balanced strategy"),
+    ("representatives.mo_fair", "Our fair strategy"),
+    ("representatives.mo_lowrisk", "Our cautious strategy"),
 ]
 
 
@@ -26,8 +26,9 @@ def _get(out: dict, path: str) -> dict:
 
 
 def build_table(out: dict) -> str:
-    head = ("| Policy | Return (€M) | Loss vol. (€k) | Loss CVaR95 (€k) | "
-            "Capital util. | Approval rate | Approval gap | Return/capital |")
+    head = ("| Strategy | Profit (€M) | How bumpy losses are (€k) | "
+            "Worst-case loss (€k) | Safety money used | Share approved | "
+            "Unfairness gap | Profit per safety € |")
     sep = "|" + "---|" * 8
     lines = [head, sep]
     for path, label in ROWS:
@@ -60,43 +61,38 @@ def honest_readout(out: dict) -> str:
     hv = out["hypervolume"]
 
     notes = []
-    # Where MO helps: fairness at modest return cost vs single-objective.
+    # Where balancing goals helps: fairness at a modest profit cost.
     gap_cut = (so["approval_gap"] - fair["approval_gap"]) / max(so["approval_gap"], 1e-9)
     ret_cost = (so["return"] - fair["return"]) / max(so["return"], 1e-9)
     notes.append(
-        f"- **Where the multi-objective view helps:** it surfaces trade-offs the "
-        f"baselines never reveal. The fairness-tilted policy closes the approval "
-        f"gap by {gap_cut*100:.0f}% relative to the single-objective optimiser "
-        f"(to {fair['approval_gap']:.3f}) while still approving "
-        f"{fair['approval_rate']*100:.0f}% of applicants, at a {ret_cost*100:.0f}% "
-        f"cost in return. The MO front spans {hv['mo_front']:.2f} of the normalised "
-        f"objective hypervolume, versus {hv['single_objective']:.2f} (single-objective) "
-        f"and {hv['myopic']:.2f} (myopic) for the baseline points alone.")
+        f"- **Where balancing goals helps.** Our fair strategy closes the unfairness "
+        f"gap by {gap_cut*100:.0f}% compared to the profit chaser (down to "
+        f"{fair['approval_gap']:.3f}), and it still approves "
+        f"{fair['approval_rate']*100:.0f}% of people. That costs about "
+        f"{ret_cost*100:.0f}% of profit. None of the simple approaches give you that "
+        f"option, because they only look at one thing.")
     # Where structured search beats the textbook pipeline outright.
     if _dominates(so, myo):
         notes.append(
-            "- **Where the structured search helps even a return-only lender:** the "
-            "optimised single-objective policy *Pareto-dominates* the myopic "
-            "predict-then-threshold baseline on all four objectives at once — higher "
-            f"return (€{so['return']/1e6:.1f}M vs €{myo['return']/1e6:.1f}M), lower "
-            "loss volatility, lower capital use and a smaller approval gap. The "
-            "textbook fixed break-even threshold with flat pricing simply leaves "
-            "money and fairness on the table.")
+            "- **Even if you only care about profit, the usual approach is not the "
+            "best.** The profit chaser beats the usual bank approach on every single "
+            f"goal at once. It makes more money (€{so['return']/1e6:.1f}M vs "
+            f"€{myo['return']/1e6:.1f}M), has steadier losses, uses less safety money, "
+            "and is fairer. The usual fixed cutoff with one flat rate just leaves "
+            "money and fairness behind.")
     # Where it merely matches.
     notes.append(
-        f"- **Where it merely matches:** on raw expected return the single-objective "
-        f"optimiser is best by construction (€{so['return']/1e6:.1f}M); the balanced "
-        f"MO policy earns less (€{bal['return']/1e6:.1f}M). A lender who genuinely "
-        f"only cares about return should use the simpler optimiser — the extra "
-        f"machinery buys nothing on that single axis.")
+        f"- **Where it just ties.** If profit is the only thing you care about, the "
+        f"profit chaser wins by design (€{so['return']/1e6:.1f}M), and our balanced "
+        f"strategy makes a bit less (€{bal['return']/1e6:.1f}M). On that one number, "
+        f"all the extra work buys you nothing.")
     # Where it honestly doesn't help.
     notes.append(
-        "- **Where it does not help (honest):** the decision-dependent *pricing* "
-        "channel is second-order at the data-anchored sensitivity (κ=1) — the "
-        "multi-year interest margin dominates a one-off default loss, so a "
-        "price-taking lender is close to optimal on price (see the sensitivity "
-        "figure). The endogenous-default story matters for *who* and *how much* to "
-        "lend (access, leverage, capital) far more than for the headline rate.")
+        "- **Where it does not help, honestly.** Charging less to lower risk barely "
+        "changes the best price at the level the real data points to. Years of "
+        "interest on a good loan outweigh a one-off default, so a bank that just "
+        "charges the going rate is close to right on price. The clever loop matters "
+        "for who gets a loan and how much, not for the rate itself.")
     return "\n".join(notes)
 
 
@@ -106,10 +102,10 @@ def main() -> dict:
     table = build_table(out)
     readout = honest_readout(out)
     md = (table + "\n\n" +
-          "_Return on capital = expected return / capital utilisation. "
-          "Loss volatility and CVaR95 are across rollouts. "
-          "All policies evaluated on the same applicant stream (common random "
-          "numbers)._\n\n" + readout + "\n")
+          "_Profit per safety euro is profit divided by safety money used. "
+          "\"How bumpy losses are\" and \"worst-case loss\" come from running each "
+          "strategy many times. Every strategy faced the exact same applicants._\n\n"
+          + readout + "\n")
     path = C.save_text("results_table.md", md)
     print("\n" + table + "\n")
     print(readout)

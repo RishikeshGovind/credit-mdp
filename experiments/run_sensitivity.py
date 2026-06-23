@@ -88,46 +88,42 @@ def render(data: dict) -> None:
     fig, (ax, ax2) = plt.subplots(1, 2, figsize=(12.6, 5.2))
 
     # -- left: optimal rate vs kappa ------------------------------------
+    plain = ["safer borrowers", "riskier loans", "the shakiest borrowers"]
     styles = [("-", C.PALETTE["mo_balanced"]), ("-", C.PALETTE["pareto"]),
               ("-", C.PALETTE["myopic"])]
-    for (label, ys), (ls, col) in zip(data["curves"].items(), styles):
-        ax.plot(kappa, np.array(ys) * 100, ls, color=col, lw=2.4, marker="o",
-                ms=3, label=label)
-    ax.axhline(data["ceiling"] * 100, color=C.PALETTE["muted"], lw=1.2, ls=":")
-    ax.text(kappa.max(), data["ceiling"] * 100 + 0.02, "rate ceiling = myopic optimum",
-            ha="right", va="bottom", color="#7a7a7a", fontsize=9)
-    ax.axvline(data["data_anchored_kappa"], color=C.PALETTE["accent"], lw=1.4, ls="-.")
-    ax.text(data["data_anchored_kappa"] + 0.1, 3.05, "data-anchored\nκ = 1",
-            color="#b7902a", fontsize=9, va="bottom")
-    ax.set_xlabel("decision-dependence strength κ")
-    ax.set_ylabel("return-maximising offered rate  (%)")
-    ax.set_title("Optimal price vs. default sensitivity")
+    for (label, ys), nice, (ls, col) in zip(data["curves"].items(), plain, styles):
+        ax.plot(kappa, np.array(ys) * 100, ls, color=col, lw=2.6, marker="o",
+                ms=3, label=nice)
+    ax.axhline(data["ceiling"] * 100, color=C.PALETTE["muted"], lw=1.4, ls=":")
+    ax.text(kappa.max(), data["ceiling"] * 100 + 0.02,
+            "charge as much as possible", ha="right", va="bottom",
+            color="#8a8275", fontsize=10)
+    ax.axvline(data["data_anchored_kappa"], color=C.PALETTE["accent"], lw=1.6, ls="-.")
+    ax.text(data["data_anchored_kappa"] + 0.1, 3.05, "what the\nreal data says",
+            color="#b7902a", fontsize=10, va="bottom")
+    ax.set_xlabel("how strongly the rate changes the risk")
+    ax.set_ylabel("best rate to charge  (%)")
+    ax.set_title("The best rate to charge")
     ax.set_ylim(2.95, 5.7)
     ax.legend(loc="lower left")
 
-    # -- right: the mechanism — profit-vs-rate peak migrating left -------
+    # -- right: the mechanism, profit-vs-rate peak migrating left -------
     cols = ["#264653", "#2a9d8f", "#f4a261", "#e76f51"]
-    for k, col in zip(data["profit_kappas"], cols):
+    names = ["rate ignored", "real-data level", "3x stronger", "6x stronger"]
+    for k, col, nm in zip(data["profit_kappas"], cols, names):
         y = np.array(data["profit_curves"][f"{k:g}"])
-        ax2.plot(rates, y, color=col, lw=2.2, label=f"κ = {k:g}")
+        ax2.plot(rates, y, color=col, lw=2.4, label=nm)
         imax = int(np.argmax(y))
-        ax2.plot(rates[imax], y[imax], "o", color=col, ms=7,
+        ax2.plot(rates[imax], y[imax], "o", color=col, ms=8,
                  markeredgecolor="white", zorder=5)
-    ax2.set_xlabel("offered rate  (%)")
-    ax2.set_ylabel("expected profit per € of principal")
-    ax2.set_title("Profit peak migrates left (marginal, high-LTV)")
-    ax2.legend(title="default sensitivity", loc="lower center", ncol=2)
+    ax2.set_xlabel("rate the bank charges  (%)")
+    ax2.set_ylabel("profit per €1 lent")
+    ax2.set_title("Where profit peaks (shakiest borrowers)")
+    ax2.legend(title="how strongly rate changes risk", loc="lower center", ncol=2)
 
-    fig.suptitle("Decision-dependent default and the optimal offered rate",
-                 fontsize=14, fontweight="bold", y=1.0)
+    fig.suptitle("What is the best price to charge, and does it move?",
+                 fontsize=15.5, fontweight="bold", y=1.0)
     fig.subplots_adjust(top=0.84, wspace=0.26)
-    fig.text(0.5, -0.03,
-             "Honest read: at the data-anchored sensitivity (κ=1) the multi-year "
-             "interest margin dominates, so price barely moves — a price-taking "
-             "lender is close to optimal.\nThe endogenous effect only reshapes "
-             "pricing for marginal, high-LTV borrowers or when default is several "
-             "times more sensitive to terms.",
-             ha="center", fontsize=8.5, color="#666")
     C.savefig(fig, "endogenous_terms.png")
 
 
