@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lending under endogenous default — a multi-stage, multi-objective study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F7F4EE; --surface:#FBF9F5; --border:#E5E0D8;
+  --text:#1C1917; --muted:#78716C; --subtle:#A8A29E;
+  /* accents mapped to the figures' palette so site + plots read as one piece */
+  --teal:#2a9d8f; --teal-deep:#1f7d70;
+  --orange:#e76f51; --slate:#264653; --violet:#6a4c93;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size:15px; line-height:1.6; overflow-x:hidden;
+}
+em{font-style:italic;}
+
+/* ── nav ─────────────────────────────────────────────── */
+#topnav{
+  position:fixed; top:0; left:0; right:0; height:54px; z-index:200;
+  background:rgba(247,244,238,.92); border-bottom:1px solid var(--border);
+  backdrop-filter:blur(8px);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 clamp(20px,5vw,80px);
+}
+.brand{font-family:'Playfair Display',serif; font-size:14px; color:var(--muted); white-space:nowrap;}
+.brand em{color:var(--text);}
+.nav-links{display:flex; gap:6px; align-items:center;}
+.nav-link{
+  display:inline-flex; align-items:center; gap:7px; text-decoration:none;
+  border:1px solid var(--border); border-radius:6px; padding:5px 13px;
+  font-size:12px; font-weight:500; color:var(--muted); transition:all .2s; white-space:nowrap;
+}
+.nav-link:hover{border-color:currentColor;}
+.nav-link .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.nav-link.a1{color:var(--teal-deep);} .nav-link.a1 .dot{background:var(--teal);}
+.nav-link.a1:hover{background:var(--teal);color:#fff;border-color:var(--teal);}
+.nav-link.a2{color:var(--orange);} .nav-link.a2 .dot{background:var(--orange);}
+.nav-link.a2:hover{background:var(--orange);color:#fff;border-color:var(--orange);}
+.nav-link.a3{color:var(--violet);} .nav-link.a3 .dot{background:var(--violet);}
+.nav-link.a3:hover{background:var(--violet);color:#fff;border-color:var(--violet);}
+@media(max-width:680px){.nav-link.hideS{display:none;}}
+
+/* ── typography ──────────────────────────────────────── */
+.eyebrow{
+  font-size:10px; font-weight:600; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--teal-deep); margin-bottom:14px;
+}
+h1{font-family:'Playfair Display',serif; font-size:clamp(46px,6.4vw,96px); line-height:1.07; margin-bottom:22px;}
+h1 em{color:var(--teal-deep);}
+h2{font-family:'Playfair Display',serif; font-size:clamp(32px,4.4vw,60px); line-height:1.14; margin-bottom:14px;}
+h3{font-family:'Playfair Display',serif; font-size:clamp(18px,2vw,23px); line-height:1.3; margin-bottom:10px;}
+.lead{font-size:17px; color:var(--muted); font-weight:300; line-height:1.7; max-width:70ch;}
+.accent-line{width:42px; height:3px; background:var(--teal); margin:18px 0 30px;}
+p{max-width:72ch;}
+
+/* ── sections ────────────────────────────────────────── */
+section{padding:92px clamp(28px,6vw,120px); width:100%;}
+section+section{border-top:1px solid var(--border);}
+.alt{background:var(--surface);}
+
+/* ── hero ────────────────────────────────────────────── */
+#hero{min-height:100vh; display:flex; flex-direction:column; justify-content:center; padding-top:120px;}
+.hero-thesis{
+  margin-top:34px; padding:24px 28px; background:var(--surface);
+  border-left:3px solid var(--teal); border-radius:0 10px 10px 0; max-width:74ch;
+}
+.hero-thesis p{font-size:16px; color:var(--muted); line-height:1.75;}
+.hero-thesis p strong{color:var(--text);}
+.hero-stats{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:1px; margin-top:50px; max-width:780px;
+  border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--border);
+}
+.stat{padding:30px 34px; background:var(--bg);}
+.stat .num{font-family:'Playfair Display',serif; font-size:clamp(36px,4.6vw,64px); font-weight:700; line-height:1; color:var(--teal-deep);}
+.stat .num.o{color:var(--orange);} .stat .num.v{color:var(--violet);}
+.stat .lbl{font-size:12px; color:var(--muted); margin-top:10px; text-transform:uppercase; letter-spacing:.08em; line-height:1.5;}
+.scroll-cue{margin-top:60px; display:flex; align-items:center; gap:10px; font-size:12px; color:var(--subtle); letter-spacing:.06em;}
+.scroll-cue::after{content:''; width:1px; height:46px; background:var(--border);}
+
+/* ── two-column problem ──────────────────────────────── */
+.two-col{display:grid; grid-template-columns:1fr 1fr; gap:56px; margin-top:44px; align-items:start;}
+@media(max-width:760px){.two-col{grid-template-columns:1fr;}}
+.two-col h3{margin-bottom:12px;}
+.two-col p{font-size:14px; color:var(--muted); line-height:1.75;}
+.gap-badge{
+  display:inline-flex; align-items:center; gap:8px; background:#FDEDE8; border:1px solid #F3B6A6;
+  border-radius:20px; padding:4px 14px; font-size:12px; font-weight:600; color:#9C3B26; margin-bottom:18px;
+}
+
+/* ── property pipeline ───────────────────────────────── */
+.pipe{display:flex; flex-wrap:wrap; gap:18px; margin-top:48px;}
+.pipe-step{flex:1; min-width:220px; padding:26px 24px; background:var(--surface); border:1px solid var(--border); border-radius:10px;}
+.pipe-step .step-num{font-size:10px; font-weight:700; letter-spacing:.14em; color:var(--subtle); text-transform:uppercase; margin-bottom:10px;}
+.pipe-step h4{font-family:'Playfair Display',serif; font-size:19px; margin-bottom:8px;}
+.pipe-step p{font-size:13px; color:var(--muted); line-height:1.65;}
+.pipe-step.t-teal{border-color:var(--teal); border-width:1.5px;} .pipe-step.t-teal h4{color:var(--teal-deep);}
+.pipe-step.t-orange h4{color:var(--orange);} .pipe-step.t-violet h4{color:var(--violet);}
+
+/* ── figure blocks ───────────────────────────────────── */
+.fig-card{margin-top:30px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px; max-width:1000px;}
+.fig-card img{width:100%; height:auto; display:block; border-radius:6px;}
+.fig-cap{font-size:13px; color:var(--muted); line-height:1.65; margin-top:12px; padding:0 6px 4px;}
+.read{
+  margin-top:26px; padding:20px 26px; background:#FFF6F2; border:1.5px solid var(--orange);
+  border-radius:10px; display:flex; gap:18px; align-items:flex-start; max-width:1000px;
+}
+.read .ic{font-size:24px; flex-shrink:0; margin-top:1px;}
+.read h4{font-family:'Playfair Display',serif; font-size:16px; margin-bottom:5px;}
+.read p{font-size:13.5px; color:var(--muted); line-height:1.7;}
+
+/* ── data chips ──────────────────────────────────────── */
+.chips{display:flex; flex-wrap:wrap; gap:10px; margin-top:30px;}
+.chip{
+  display:inline-flex; align-items:center; gap:8px; background:var(--surface);
+  border:1px solid var(--border); border-radius:8px; padding:10px 16px; font-size:13px; color:var(--muted);
+}
+.chip strong{color:var(--text); font-weight:600;}
+.chip .d{width:8px;height:8px;border-radius:50%;}
+
+/* ── limitations list ────────────────────────────────── */
+.lim-list{list-style:none; margin-top:36px; max-width:80ch;}
+.lim-list li{display:flex; gap:16px; align-items:flex-start; padding:18px 0; border-bottom:1px solid var(--border); font-size:14px; color:var(--muted); line-height:1.65;}
+.lim-list li:last-child{border-bottom:none;}
+.lim-list li strong{color:var(--text); display:block; margin-bottom:3px;}
+.lim-num{font-family:'Playfair Display',serif; font-size:21px; font-weight:700; color:var(--teal-deep); flex-shrink:0; width:26px; line-height:1.1;}
+
+/* ── repro panel ─────────────────────────────────────── */
+.repro{margin-top:34px; background:var(--slate); color:#EDE9E2; border-radius:12px; padding:30px 34px; max-width:760px;}
+.repro h3{color:#fff; font-size:20px; margin-bottom:14px;}
+.repro code{display:block; background:rgba(255,255,255,.08); border-radius:6px; padding:12px 16px; font-family:'SF Mono',ui-monospace,Menlo,monospace; font-size:13px; color:#bfe9e1; margin:6px 0;}
+.repro p{font-size:13px; color:#c8c2b8; margin-top:14px; line-height:1.7;}
+
+/* ── footer ──────────────────────────────────────────── */
+footer{padding:34px clamp(28px,6vw,120px); border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;}
+.footer-brand{font-family:'Playfair Display',serif; font-size:14px; color:var(--muted);}
+.footer-brand em{color:var(--text);}
+.footer-links{display:flex; gap:22px; flex-wrap:wrap;}
+.footer-links a{font-size:12px; color:var(--subtle); text-decoration:none; transition:color .2s;}
+.footer-links a:hover{color:var(--text);}
+
+/* ── fade-in ─────────────────────────────────────────── */
+.fade{opacity:0; transform:translateY(22px); transition:opacity .6s ease, transform .6s ease;}
+.fade.in{opacity:1; transform:none;}
+.fade.d1{transition-delay:.08s;} .fade.d2{transition-delay:.18s;} .fade.d3{transition-delay:.28s;}
+</style>
+</head>
+<body>
+
+<nav id="topnav">
+  <div class="brand">Credit MDP · <em>endogenous default</em></div>
+  <div class="nav-links">
+    <a class="nav-link a1" href="#findings"><span class="dot"></span>Findings</a>
+    <a class="nav-link a2 hideS" href="#properties"><span class="dot"></span>Why it's hard</a>
+    <a class="nav-link a3" href="https://github.com/rishikeshgovind" target="_blank" rel="noopener"><span class="dot"></span>Code</a>
+  </div>
+</nav>
+
+<!-- ── hero ─────────────────────────────────────────── -->
+<section id="hero">
+  <div class="fade in">
+    <div class="eyebrow">Applied decision science · real data, honest baselines</div>
+    <h1>Lending when the price <em>changes</em> the risk.</h1>
+    <div class="accent-line"></div>
+    <p class="lead">A lender that sets a loan's terms doesn't merely <em>select</em> a
+    borrower of fixed riskiness — it <em>changes</em> that riskiness. A lower rate
+    improves affordability and lowers default; it also cuts margin. So default
+    probability is <strong>endogenous to the decision</strong>.</p>
+    <div class="hero-thesis">
+      <p>The textbook pipeline — <em>predict default, then decide</em> — freezes the
+      risk estimate and optimises against it. This project models the feedback
+      explicitly and optimises across <strong>four competing objectives over time</strong>,
+      then asks plainly: <strong>do the decisions actually change, and by how much?</strong></p>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="num">4</div><div class="lbl">competing objectives, kept as a vector</div></div>
+      <div class="stat"><div class="num o">1,000</div><div class="lbl">real loan records (UCI German Credit)</div></div>
+      <div class="stat"><div class="num v">100%</div><div class="lbl">reproducible · fixed seeds</div></div>
+    </div>
+    <div class="scroll-cue">SCROLL — the honest version</div>
+  </div>
+</section>
+
+<!-- ── problem ──────────────────────────────────────── -->
+<section id="problem" class="alt">
+  <div class="fade">
+    <div class="eyebrow">The blind spot</div>
+    <h2>Predict-then-decide, and what it misses</h2>
+    <div class="accent-line"></div>
+    <div class="two-col">
+      <div class="two-col-item">
+        <span class="gap-badge"><span>●</span> the frozen estimate</span>
+        <h3>The standard pipeline</h3>
+        <p>Estimate a probability of default as though terms were fixed, threshold on
+        it, price at the market rate, and lend. The decision never feeds back into the
+        estimate it was built on.</p>
+        <p>It is simple, auditable, and — as the results show — surprisingly hard to
+        beat on the one axis it optimises. But it is blind to its own influence.</p>
+      </div>
+      <div class="two-col-item">
+        <span class="gap-badge"><span>●</span> the feedback it ignores</span>
+        <h3>The endogenous channel</h3>
+        <p>The rate offered moves the borrower's payment burden, and payment burden
+        moves default — through a coefficient <strong>estimated from real defaults</strong>,
+        not assumed. Cheaper credit is safer credit, up to a margin cost.</p>
+        <p>Because the action changes the outcome distribution, this is a
+        <em>decision-dependent</em> (endogenous) uncertainty problem, not a prediction
+        problem with a decision bolted on.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── three properties ─────────────────────────────── -->
+<section id="properties">
+  <div class="fade">
+    <div class="eyebrow">Three reasons it isn't a classification task</div>
+    <h2>Multi-stage, multi-objective, decision-dependent</h2>
+    <div class="accent-line"></div>
+    <div class="pipe">
+      <div class="pipe-step t-teal fade d1">
+        <div class="step-num">Property 01</div>
+        <h4>Decision-dependent</h4>
+        <p>Offered terms feed an affordability channel that moves predicted default.
+        κ=0 reproduces the myopic, terms-independent assumption; κ&gt;0 bends default
+        upward with the rate. The sensitivity is a real estimated coefficient.</p>
+      </div>
+      <div class="pipe-step t-orange fade d2">
+        <div class="step-num">Property 02</div>
+        <h4>Multi-stage</h4>
+        <p>Applicants arrive over many periods under a finite capital budget.
+        Approving ties up regulatory capital until a loan resolves; realised losses
+        erode the capital for later periods; retained interest rebuilds it. Pacing
+        has value.</p>
+      </div>
+      <div class="pipe-step t-violet fade d3">
+        <div class="step-num">Property 03</div>
+        <h4>Multi-objective</h4>
+        <p>Return, loss volatility, regulatory-capital usage and approval-rate parity
+        genuinely conflict. The output is a <em>Pareto front</em>, not a single
+        "optimal" policy — and the baselines are points on it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── findings / figures ───────────────────────────── -->
+<section id="findings" class="alt">
+  <div class="fade">
+    <div class="eyebrow">Finding 01 · the trade-off surface</div>
+    <h2>The Pareto front, baselines as points</h2>
+    <div class="accent-line"></div>
+    <p class="lead">A transparent sampling-based solver (random search + a hand-written
+    NSGA-II refinement, no RL frameworks) maps the four-objective trade-off. The two
+    baselines land as single points on it.</p>
+    <div class="fig-card"><img src="figures/pareto_front.png" alt="Pareto front across four objectives" />
+      <div class="fig-cap">The myopic predict-then-threshold baseline (orange star) is
+      <strong>Pareto-dominated</strong>; the single-objective optimiser (violet) buys
+      high return at the cost of risk and capital. Colour encodes the approval-rate
+      gap — lighter is fairer.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="fade">
+    <div class="eyebrow">Finding 02 · the core insight</div>
+    <h2>Endogenous default bends the optimal price</h2>
+    <div class="accent-line"></div>
+    <p class="lead">As default grows more responsive to terms (κ), the
+    return-maximising rate bends <em>below</em> the ceiling a myopic lender would
+    charge — the profit peak migrates left.</p>
+    <div class="fig-card"><img src="figures/endogenous_terms.png" alt="Optimal offered rate vs decision-dependence" />
+      <div class="fig-cap">Left: the return-maximising rate vs decision-dependence
+      strength, by borrower segment. Right: the mechanism — the expected-profit peak
+      moving left as feedback strengthens.</div>
+    </div>
+    <div class="read">
+      <div class="ic">⚖️</div>
+      <div>
+        <h4>The honest read</h4>
+        <p>At the data-anchored sensitivity (κ=1) this effect is <em>second-order for
+        pricing</em>: a multi-year interest margin dwarfs a one-off default loss, so a
+        price-taking lender is close to optimal on price. It only bites for marginal,
+        high-LTV borrowers or stronger feedback. Reporting where the simpler approach
+        already wins is the point, not a footnote.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="fade">
+    <div class="eyebrow">Finding 03 · dynamics</div>
+    <h2>Portfolio trajectories over time</h2>
+    <div class="accent-line"></div>
+    <p class="lead">Capital usage, cumulative losses and approval rate, period by
+    period. Greedy baselines accumulate losses; paced multi-objective policies stay
+    capital-efficient and release capital in the wind-down.</p>
+    <div class="fig-card"><img src="figures/portfolio_trajectories.png" alt="Capital, losses and approval rate over periods" />
+      <div class="fig-cap">The multi-stage coupling made visible: lending early ties up
+      capital, losses erode the equity ceiling, survivors release it.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="fade">
+    <div class="eyebrow">Finding 04 · fairness</div>
+    <h2>The cost of access parity</h2>
+    <div class="accent-line"></div>
+    <p class="lead">How much expected return you give up to close the approval-rate gap
+    between groups. Full parity is reachable here at a real but bounded cost.</p>
+    <div class="fig-card"><img src="figures/fairness_return_frontier.png" alt="Fairness vs return frontier" />
+      <div class="fig-cap">The achievable frontier (best return at each gap cap), with
+      baselines plotted. The myopic baseline sits <em>below</em> the frontier —
+      inefficiently unfair; the single-objective optimiser happens to land on it.</div>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="fade">
+    <div class="eyebrow">Finding 05 · the foundation</div>
+    <h2>The decision-dependent default model</h2>
+    <div class="accent-line"></div>
+    <p class="lead">A logistic PD model, calibrated out-of-sample on the real data, with
+    a decision-dependent head: the offered rate genuinely moves predicted default
+    through affordability.</p>
+    <div class="fig-card"><img src="figures/pd_model.png" alt="PD model calibration and decision-dependence" />
+      <div class="fig-cap">Left: out-of-sample calibration (AUC ≈ 0.79). Right: mean
+      predicted default vs offered rate — κ=0 flat (the myopic assumption), κ&gt;0
+      bending up, all pivoting at the baseline rate.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── data ─────────────────────────────────────────── -->
+<section id="data">
+  <div class="fade">
+    <div class="eyebrow">Provenance</div>
+    <h2>Real data, properly attributed</h2>
+    <div class="accent-line"></div>
+    <p class="lead">Nothing is fabricated. Two distinct real sources, for two distinct
+    jobs — borrower behaviour and Irish portfolio scale.</p>
+    <div class="chips">
+      <span class="chip"><span class="d" style="background:var(--teal)"></span><strong>UCI Statlog German Credit</strong> — 1,000 records, CC BY 4.0 · drives the PD model</span>
+      <span class="chip"><span class="d" style="background:var(--orange)"></span><strong>Central Bank of Ireland</strong> — arrears 3.5% (Q2 2025), new-mortgage rate 3.59% · scale only</span>
+      <span class="chip"><span class="d" style="background:var(--violet)"></span><strong>No Irish loan-level data</strong> used or claimed</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── limitations ──────────────────────────────────── -->
+<section id="limitations" class="alt">
+  <div class="fade">
+    <div class="eyebrow">What didn't work, and where it's weak</div>
+    <h2>Limitations, honestly</h2>
+    <div class="accent-line"></div>
+    <ol class="lim-list">
+      <li><span class="lim-num">1</span><span><strong>The decision-dependent pricing effect is second-order.</strong> With realistic multi-year margins, a price-taking lender is close to optimal on price; endogeneity matters for <em>who and how much</em> to lend, not the headline rate.</span></li>
+      <li><span class="lim-num">2</span><span><strong>A simpler baseline wins on its own axis.</strong> On raw return the single-objective optimiser is best by construction; the multi-objective machinery buys nothing if you care about only one objective — its value is exposing the trade-off.</span></li>
+      <li><span class="lim-num">3</span><span><strong>The sensitivity coefficient is associational, not causal.</strong> It is estimated from observational data and stress-tested with κ rather than claimed as a causal rate effect.</span></li>
+      <li><span class="lim-num">4</span><span><strong>The data are a proxy.</strong> German consumer credit (pre-1994, n=1,000) stands in for mortgage behaviour; the Irish grounding is aggregate calibration only. Magnitudes are illustrative.</span></li>
+      <li><span class="lim-num">5</span><span><strong>Fairness is narrow; the solver is approximate.</strong> Approval-rate parity on a binary attribute, optimised by sampling search over an interpretable policy class — chosen for transparency over raw performance.</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ── reproduce ────────────────────────────────────── -->
+<section id="reproduce">
+  <div class="fade">
+    <div class="eyebrow">Reproduce it</div>
+    <h2>One command, fixed seeds</h2>
+    <div class="accent-line"></div>
+    <div class="repro">
+      <h3>Run the whole pipeline</h3>
+      <code>pip install -r requirements.txt</code>
+      <code>python run_all.py&nbsp;&nbsp;# ~50s → figures/ + results table</code>
+      <p>Deterministic to the decimal: all randomness flows through explicitly seeded
+      generators and the PD model uses unshuffled cross-validation. Each figure is
+      also runnable on its own, e.g. <em>python -m experiments.run_pareto</em>.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-brand">Credit MDP · <em>lending under endogenous default</em></div>
+  <div class="footer-links">
+    <a href="https://github.com/rishikeshgovind" target="_blank" rel="noopener">Code</a>
+    <a href="https://www.centralbank.ie/statistics/data-and-analysis/credit-and-banking-statistics/mortgage-arrears" target="_blank" rel="noopener">CBI arrears data</a>
+    <a href="https://archive.ics.uci.edu/dataset/144/statlog+german+credit+data" target="_blank" rel="noopener">UCI German Credit</a>
+    <span style="font-size:12px;color:var(--subtle)">MIT · data CC BY 4.0</span>
+  </div>
+</footer>
+
+<script>
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }});
+  }, {threshold:0.12});
+  document.querySelectorAll('.fade').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
