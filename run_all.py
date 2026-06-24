@@ -75,7 +75,11 @@ def main() -> None:
     print("== 8. inject results into README ==")
     inject_results(os.path.join(ROOT, "experiments", "results", "results_table.md"))
 
-    print("== 9. sync figures into docs/ for GitHub Pages ==")
+    print("== 9. build the 'Numbers' tables behind each chart ==")
+    from experiments import build_tables
+    build_tables.main()
+
+    print("== 10. sync figures into docs/ for GitHub Pages ==")
     sync_docs_figures()
 
     print(f"\nDone in {time.time() - t0:.0f}s. See figures/ and README.md.")
