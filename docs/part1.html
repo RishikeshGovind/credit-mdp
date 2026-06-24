@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Part 1 — Can we predict who defaults?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav id="topnav">
+  <div class="brand">A loan study by <em>Rishikesh Govind</em> &middot; Part 1 of 2</div>
+  <div class="nav-links">
+    <a class="nav-link a2" href="index.html"><span class="dot"></span>Part 2: the decision &rarr;</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="fade in">
+    <div class="eyebrow">Part 1 of 2 &middot; predicting default</div>
+    <h1>Can we predict <em>who defaults?</em></h1>
+    <div class="accent-line"></div>
+    <p class="lead">Before a bank can make a smart lending decision, it needs to guess
+    how risky each borrower is. So that is where this starts. Using thousands of real
+    loans that have all finished, we look at who actually fell behind, and then build
+    a simple model to predict it.</p>
+    <div class="hero-note">
+      <p>This is the groundwork. It is the ordinary <strong>"predict who defaults"</strong>
+      step that almost every lender does. <a href="index.html" style="color:var(--teal-deep);font-weight:600;">Part 2</a>
+      picks up where it ends and asks the harder question: once you can predict risk,
+      what should the bank actually <em>do</em> about it?</p>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="num o">9,578</div><div class="lbl">real loans, every one finished</div></div>
+      <div class="stat"><div class="num">16%</div><div class="lbl">of them ended in default</div></div>
+      <div class="stat"><div class="num v">0.61</div><div class="lbl">how accurate the model gets (AUC)</div></div>
+    </div>
+    <div class="scroll-cue">SCROLL TO READ PART 1</div>
+  </div>
+</section>
+
+<!-- DATA -->
+<section id="data">
+  <div class="fade">
+    <div class="eyebrow">The data</div>
+    <h2>Real loans, with the ending known</h2>
+    <div class="accent-line"></div>
+    <p>We use 9,578 Lending Club loans from 2007 to 2011. The useful thing is that
+    every one has finished, so we know whether it was paid back or charged off. That
+    lets us look back and ask what the borrowers who defaulted had in common. About
+    one in six of these loans went bad.</p>
+    <div class="chips">
+      <span class="chip"><span class="d" style="background:var(--teal)"></span><strong>9,578 finished loans</strong> (2007 to 2011)</span>
+      <span class="chip"><span class="d" style="background:var(--orange)"></span><strong>Interest rate and outcome</strong> both recorded</span>
+      <span class="chip"><span class="d" style="background:var(--violet)"></span><strong>Credit score, debt, income, purpose</strong> for each borrower</span>
+    </div>
+  </div>
+</section>
+
+<!-- WHO DEFAULTS -->
+<section id="who" class="alt">
+  <div class="fade">
+    <div class="eyebrow">What we found</div>
+    <h2>Who actually defaults</h2>
+    <div class="accent-line"></div>
+    <p>The clearest signals are the obvious ones, and the data backs them up.
+    Borrowers charged a higher interest rate, with a lower credit score, or carrying
+    more debt relative to income, default more often. The orange bars are the riskiest
+    groups.</p>
+    <figure class="viz">
+      <div class="viz-tabs">
+        <button class="viz-tab is-active" data-view="chart">Chart</button>
+        <button class="viz-tab" data-view="data">Tables</button>
+      </div>
+      <div class="viz-chart"><img src="figures/who_defaults.png" alt="Default rate by interest rate, credit score, and debt-to-income" /></div>
+      <div class="viz-data" hidden>
+        <!-- TABLE:who_defaults:START -->
+<p class="data-h">Default rate by interest rate</p><table class="data-table"><thead><tr><th>Group</th><th>Default rate</th></tr></thead><tbody><tr><td>under 10%</td><td>7%</td></tr><tr><td>10-12%</td><td>15%</td></tr><tr><td>12-14%</td><td>17%</td></tr><tr><td>14-16%</td><td>21%</td></tr><tr><td>16%+</td><td>29%</td></tr></tbody></table><p class="data-h">Default rate by credit score</p><table class="data-table"><thead><tr><th>Group</th><th>Default rate</th></tr></thead><tbody><tr><td>under 660</td><td>31%</td></tr><tr><td>660-680</td><td>22%</td></tr><tr><td>680-700</td><td>18%</td></tr><tr><td>700-720</td><td>16%</td></tr><tr><td>720+</td><td>10%</td></tr></tbody></table><p class="data-h">Default rate by debt-to-income</p><table class="data-table"><thead><tr><th>Group</th><th>Default rate</th></tr></thead><tbody><tr><td>under 8</td><td>15%</td></tr><tr><td>8-12</td><td>15%</td></tr><tr><td>12-16</td><td>16%</td></tr><tr><td>16-20</td><td>17%</td></tr><tr><td>20+</td><td>18%</td></tr></tbody></table><p class="data-caption">Every bar on the chart. Overall default rate 16% across 9,578 loans.</p>
+<!-- TABLE:who_defaults:END -->
+      </div>
+      <figcaption class="fig-cap">Default rate within each group, against the 16%
+      average (dashed line). The pattern is steepest for the interest rate and the
+      credit score.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- DISTRIBUTIONS -->
+<section id="distributions">
+  <div class="fade">
+    <div class="eyebrow">What we found</div>
+    <h2>What is different about the loans that go bad</h2>
+    <div class="accent-line"></div>
+    <p>Another way to look at it: line up the borrowers who paid back against the ones
+    who defaulted, feature by feature. The interest rate and the credit score pull the
+    two groups apart the most. Debt and payment burden barely separate them at all.</p>
+    <figure class="viz">
+      <div class="viz-tabs">
+        <button class="viz-tab is-active" data-view="chart">Chart</button>
+        <button class="viz-tab" data-view="data">Tables</button>
+      </div>
+      <div class="viz-chart"><img src="figures/distributions.png" alt="distributions" /></div>
+      <div class="viz-data" hidden>
+        <!-- TABLE:distributions:START -->
+<table class="data-table"><thead><tr><th>Feature</th><th>Typical: paid back</th><th>Typical: defaulted</th></tr></thead><tbody><tr><td>credit score</td><td>707.0</td><td>692.0</td></tr><tr><td>interest rate (%)</td><td>12.2</td><td>13.2</td></tr><tr><td>debt-to-income</td><td>12.5</td><td>13.3</td></tr><tr><td>payment-to-income (%)</td><td>5.8</td><td>6.5</td></tr></tbody></table><p class="data-caption">The median borrower in each group. Bigger gaps mean the feature separates the two outcomes more.</p>
+<!-- TABLE:distributions:END -->
+      </div>
+      <figcaption class="fig-cap">Teal is paid back, orange is defaulted. Where the two
+      overlap, the feature does not tell you much on its own.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- PURPOSE -->
+<section id="purpose" class="alt">
+  <div class="fade">
+    <div class="eyebrow">What we found</div>
+    <h2>What people borrow for matters too</h2>
+    <div class="accent-line"></div>
+    <p>The reason someone takes a loan says something about how it will go. Loans for
+    a small business or for education go bad far more often than loans to pay off a
+    credit card or make a big purchase.</p>
+    <figure class="viz">
+      <div class="viz-tabs">
+        <button class="viz-tab is-active" data-view="chart">Chart</button>
+        <button class="viz-tab" data-view="data">Tables</button>
+      </div>
+      <div class="viz-chart"><img src="figures/default_by_purpose.png" alt="Default rate by stated loan purpose" /></div>
+      <div class="viz-data" hidden>
+        <!-- TABLE:default_by_purpose:START -->
+<table class="data-table"><thead><tr><th>Loan purpose</th><th>Default rate</th><th>Number of loans</th></tr></thead><tbody><tr><td>small business</td><td>28%</td><td>619</td></tr><tr><td>educational</td><td>20%</td><td>343</td></tr><tr><td>home improvement</td><td>17%</td><td>629</td></tr><tr><td>all other</td><td>17%</td><td>2,331</td></tr><tr><td>debt consolidation</td><td>15%</td><td>3,957</td></tr><tr><td>credit card</td><td>12%</td><td>1,262</td></tr><tr><td>major purchase</td><td>11%</td><td>437</td></tr></tbody></table><p class="data-caption">Default rate by stated purpose. Overall 16%.</p>
+<!-- TABLE:default_by_purpose:END -->
+      </div>
+      <figcaption class="fig-cap">Default rate by what the borrower said the loan was
+      for. Small-business loans are nearly double the average.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- CORRELATIONS -->
+<section id="correlations">
+  <div class="fade">
+    <div class="eyebrow">What we found</div>
+    <h2>How the borrower facts relate</h2>
+    <div class="accent-line"></div>
+    <p>The facts about a borrower are tangled together. A higher interest rate goes
+    with a lower credit score, because the lender already charges riskier borrowers
+    more. That tangle is part of why no single number predicts default well.</p>
+    <figure class="viz">
+      <div class="viz-tabs">
+        <button class="viz-tab is-active" data-view="chart">Chart</button>
+        <button class="viz-tab" data-view="data">Tables</button>
+      </div>
+      <div class="viz-chart"><img src="figures/correlations.png" alt="correlations" /></div>
+      <div class="viz-data" hidden>
+        <!-- TABLE:correlations:START -->
+<p class="data-h">How strongly each fact links to defaulting</p><table class="data-table"><thead><tr><th>Borrower fact</th><th>Link to defaulting</th></tr></thead><tbody><tr><td>interest rate</td><td>+0.160</td></tr><tr><td>credit score</td><td>-0.150</td></tr><tr><td>credit checks</td><td>+0.149</td></tr><tr><td>card use</td><td>+0.082</td></tr><tr><td>balance</td><td>+0.054</td></tr><tr><td>public records</td><td>+0.049</td></tr><tr><td>debt-to-income</td><td>+0.037</td></tr><tr><td>income</td><td>-0.033</td></tr><tr><td>history length</td><td>-0.029</td></tr><tr><td>delinquencies</td><td>+0.009</td></tr></tbody></table><p class="data-h">The full table of relationships</p><div class="data-scroll"><table class="data-table"><thead><tr><th>fact</th><th>interest rate</th><th>credit score</th><th>debt-to-income</th><th>income</th><th>card use</th><th>credit checks</th><th>history length</th><th>balance</th><th>delinquencies</th><th>public records</th></tr></thead><tbody><tr><td>interest rate</td><td>+1.00</td><td>-0.71</td><td>+0.22</td><td>+0.06</td><td>+0.46</td><td>+0.20</td><td>-0.12</td><td>+0.09</td><td>+0.16</td><td>+0.10</td></tr><tr><td>credit score</td><td>-0.71</td><td>+1.00</td><td>-0.24</td><td>+0.11</td><td>-0.54</td><td>-0.19</td><td>+0.26</td><td>-0.02</td><td>-0.22</td><td>-0.15</td></tr><tr><td>debt-to-income</td><td>+0.22</td><td>-0.24</td><td>+1.00</td><td>-0.05</td><td>+0.34</td><td>+0.03</td><td>+0.06</td><td>+0.19</td><td>-0.02</td><td>+0.01</td></tr><tr><td>income</td><td>+0.06</td><td>+0.11</td><td>-0.05</td><td>+1.00</td><td>+0.05</td><td>+0.03</td><td>+0.34</td><td>+0.37</td><td>+0.03</td><td>+0.02</td></tr><tr><td>card use</td><td>+0.46</td><td>-0.54</td><td>+0.34</td><td>+0.05</td><td>+1.00</td><td>-0.01</td><td>-0.02</td><td>+0.20</td><td>-0.04</td><td>+0.07</td></tr><tr><td>credit checks</td><td>+0.20</td><td>-0.19</td><td>+0.03</td><td>+0.03</td><td>-0.01</td><td>+1.00</td><td>-0.04</td><td>+0.02</td><td>+0.02</td><td>+0.07</td></tr><tr><td>history length</td><td>-0.12</td><td>+0.26</td><td>+0.06</td><td>+0.34</td><td>-0.02</td><td>-0.04</td><td>+1.00</td><td>+0.23</td><td>+0.08</td><td>+0.07</td></tr><tr><td>balance</td><td>+0.09</td><td>-0.02</td><td>+0.19</td><td>+0.37</td><td>+0.20</td><td>+0.02</td><td>+0.23</td><td>+1.00</td><td>-0.03</td><td>-0.03</td></tr><tr><td>delinquencies</td><td>+0.16</td><td>-0.22</td><td>-0.02</td><td>+0.03</td><td>-0.04</td><td>+0.02</td><td>+0.08</td><td>-0.03</td><td>+1.00</td><td>+0.01</td></tr><tr><td>public records</td><td>+0.10</td><td>-0.15</td><td>+0.01</td><td>+0.02</td><td>+0.07</td><td>+0.07</td><td>+0.07</td><td>-0.03</td><td>+0.01</td><td>+1.00</td></tr></tbody></table></div><p class="data-caption">All the links to defaulting are weak, which is exactly why predicting it is hard.</p>
+<!-- TABLE:correlations:END -->
+      </div>
+      <figcaption class="fig-cap">Red means two things rise together, teal means one
+      rises as the other falls.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- MODEL -->
+<section id="model" class="alt">
+  <div class="fade">
+    <div class="eyebrow">What we found</div>
+    <h2>A model to predict it</h2>
+    <div class="accent-line"></div>
+    <p>We put all of these signals into one simple model that gives each borrower a
+    risk score. It lines up with reality, but it is far from perfect, which is honest
+    and normal for this kind of data. The credit score and income pull predicted risk
+    down, while recent credit checks and a high interest rate push it up.</p>
+    <figure class="viz">
+      <div class="viz-tabs">
+        <button class="viz-tab is-active" data-view="chart">Chart</button>
+        <button class="viz-tab" data-view="data">Tables</button>
+      </div>
+      <div class="viz-chart"><img src="figures/model_drivers.png" alt="Model calibration and which features drive its prediction" /></div>
+      <div class="viz-data" hidden>
+        <!-- TABLE:model_drivers:START -->
+<p class="data-h">What the model leans on</p><table class="data-table"><thead><tr><th>Borrower fact</th><th>Effect on predicted risk (+ raises, - lowers)</th></tr></thead><tbody><tr><td>recent credit checks</td><td>+0.19</td></tr><tr><td>interest rate charged</td><td>+0.17</td></tr><tr><td>revolving balance</td><td>+0.12</td></tr><tr><td>card utilisation</td><td>+0.07</td></tr><tr><td>public records</td><td>+0.06</td></tr><tr><td>length of credit history</td><td>+0.03</td></tr><tr><td>debt-to-income</td><td>-0.01</td></tr><tr><td>past delinquencies</td><td>-0.05</td></tr><tr><td>income</td><td>-0.16</td></tr><tr><td>credit score (FICO)</td><td>-0.23</td></tr></tbody></table><p class="data-h">How well it is calibrated</p><table class="data-table"><thead><tr><th>Risk the model predicted</th><th>How often they defaulted</th></tr></thead><tbody><tr><td>6%</td><td>6%</td></tr><tr><td>8%</td><td>9%</td></tr><tr><td>9%</td><td>12%</td></tr><tr><td>11%</td><td>14%</td></tr><tr><td>13%</td><td>17%</td></tr><tr><td>14%</td><td>18%</td></tr><tr><td>17%</td><td>17%</td></tr><tr><td>21%</td><td>24%</td></tr><tr><td>80%</td><td>21%</td></tr><tr><td>99%</td><td>22%</td></tr></tbody></table><p class="data-caption">Standardised effects, so they are comparable. Model AUC = 0.61.</p>
+<!-- TABLE:model_drivers:END -->
+      </div>
+      <figcaption class="fig-cap"><b>Left:</b> predicted risk vs how often those
+      borrowers really defaulted. <b>Right:</b> which borrower facts move the
+      prediction, and in which direction.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- PERFORMANCE -->
+<section id="performance">
+  <div class="fade">
+    <div class="eyebrow">What we found</div>
+    <h2>How good is the model, really?</h2>
+    <div class="accent-line"></div>
+    <p>Honestly, only okay. It catches defaulters a bit better than a coin flip, and
+    the two groups of borrowers overlap a lot. We tried stronger models and more
+    features, and this data tops out around the same place. That low ceiling is the
+    real point. If prediction can only get you so far, then being smart about the
+    decision matters more, and that is Part 2.</p>
+    <figure class="viz">
+      <div class="viz-tabs">
+        <button class="viz-tab is-active" data-view="chart">Chart</button>
+        <button class="viz-tab" data-view="data">Tables</button>
+      </div>
+      <div class="viz-chart"><img src="figures/model_performance.png" alt="model_performance" /></div>
+      <div class="viz-data" hidden>
+        <!-- TABLE:model_performance:START -->
+<table class="data-table"><thead><tr><th>Good loans wrongly flagged</th><th>Defaulters caught</th></tr></thead><tbody><tr><td>11%</td><td>15%</td></tr><tr><td>20%</td><td>28%</td></tr><tr><td>30%</td><td>44%</td></tr><tr><td>50%</td><td>67%</td></tr></tbody></table><p class="data-caption">A few points along the ROC curve. AUC = 0.61 (0.5 is a coin flip, 1.0 is perfect).</p>
+<!-- TABLE:model_performance:END -->
+      </div>
+      <figcaption class="fig-cap"><b>Left:</b> the ROC curve, a standard score for a
+      classifier. <b>Right:</b> the risk scores it gave to each group, which overlap
+      heavily.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- HANDOFF -->
+<section id="next" class="alt">
+  <div class="fade">
+    <div class="eyebrow">Where this goes</div>
+    <h2>Predicting is only half the job</h2>
+    <div class="accent-line"></div>
+    <p class="big-p">A risk score tells you who is likely to default. It does not tell
+    you what to do about it. What rate should the bank charge? Who should it approve?
+    How does it balance profit against losses, against fairness, when the money runs
+    out and the loans come in month after month?</p>
+    <p>And there is a twist the prediction step quietly misses: the rate the bank
+    charges does not just measure risk, it changes it. That feedback, and the decision
+    problem built on top of this model, is Part 2.</p>
+    <div class="run" style="max-width:none;">
+      <h3>Part 2: When a bank sets your loan, it changes how risky you are</h3>
+      <p style="margin-bottom:18px;">The decision problem on top of this exact model
+      and data: the feedback loop, four competing goals, and whether the clever
+      approach actually helps.</p>
+      <a href="index.html" style="display:inline-block; background:var(--teal); color:#fff; font-weight:600; font-size:14px; text-decoration:none; padding:11px 22px; border-radius:8px;">Read Part 2 &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-brand">Part 1 of 2 &middot; <em>predicting who defaults</em></div>
+  <div class="footer-links">
+    <a href="index.html">Part 2: the decision</a>
+    <a href="https://github.com/RishikeshGovind/credit-mdp" target="_blank" rel="noopener">Code</a>
+    <a href="https://github.com/RishikeshGovind/credit-mdp/blob/main/data/PROVENANCE.md" target="_blank" rel="noopener">Where the data is from</a>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>

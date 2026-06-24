@@ -68,18 +68,22 @@ def main() -> None:
     from experiments import run_sensitivity
     run_sensitivity.main()
 
-    print("== 7. results table ==")
+    print("== 7. Part 1 charts (who defaults + the model) ==")
+    from experiments import run_eda
+    run_eda.main()
+
+    print("== 8. results table ==")
     from experiments import results_table
     results_table.main()
 
-    print("== 8. inject results into README ==")
+    print("== 9. inject results into README ==")
     inject_results(os.path.join(ROOT, "experiments", "results", "results_table.md"))
 
-    print("== 9. build the 'Numbers' tables behind each chart ==")
+    print("== 10. build the 'Tables' view behind each chart (both pages) ==")
     from experiments import build_tables
     build_tables.main()
 
-    print("== 10. sync figures into docs/ for GitHub Pages ==")
+    print("== 11. sync figures into docs/ for GitHub Pages ==")
     sync_docs_figures()
 
     print(f"\nDone in {time.time() - t0:.0f}s. See figures/ and README.md.")

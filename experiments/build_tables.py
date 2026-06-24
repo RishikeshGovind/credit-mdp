@@ -15,6 +15,7 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RESULTS = os.path.join(ROOT, "experiments", "results")
 INDEX = os.path.join(ROOT, "docs", "index.html")
+PART1 = os.path.join(ROOT, "docs", "part1.html")
 
 
 def _load(name: str) -> dict:
@@ -142,12 +143,92 @@ def fairness_return_frontier() -> str:
     return t1 + t2 + _cap("A gap of 0 means both income groups are approved equally.")
 
 
-BUILDERS = {
-    "pd_model": pd_model,
-    "endogenous_terms": endogenous_terms,
-    "pareto_front": pareto_front,
-    "portfolio_trajectories": portfolio_trajectories,
-    "fairness_return_frontier": fairness_return_frontier,
+# -- Part 1 (the 'predict' page) builders -----------------------------------
+def who_defaults() -> str:
+    d = _load("eda.json")
+    out = ""
+    for title, bd in d["bands"].items():
+        rows = [[lab, f"{r:.0f}%"] for lab, r in zip(bd["labels"], bd["rates"])]
+        out += _h(f"Default rate {title}") + _table(["Group", "Default rate"], rows)
+    return out + _cap(f"Every bar on the chart. Overall default rate "
+                      f"{d['overall_default']:.0f}% across {d['n']:,} loans.")
+
+
+def default_by_purpose() -> str:
+    d = _load("eda.json")
+    p = d["purpose"]
+    order = sorted(zip(p["labels"], p["rates"], p["counts"]), key=lambda x: -x[1])
+    rows = [[name, f"{rate:.0f}%", f"{cnt:,}"] for name, rate, cnt in order]
+    return _table(["Loan purpose", "Default rate", "Number of loans"], rows) + _cap(
+        f"Default rate by stated purpose. Overall {d['overall_default']:.0f}%.")
+
+
+def model_drivers() -> str:
+    d = _load("eda.json")
+    drivers = sorted(d["drivers"].items(), key=lambda kv: -kv[1])
+    rows = [[name, f"{v:+.2f}"] for name, v in drivers]
+    t1 = _h("What the model leans on") + _table(
+        ["Borrower fact", "Effect on predicted risk (+ raises, - lowers)"], rows)
+    pm, om = d["pred_mean"], d["obs_mean"]
+    rows2 = [[f"{pm[i]*100:.0f}%", f"{om[i]*100:.0f}%"] for i in range(len(pm))]
+    t2 = _h("How well it is calibrated") + _table(
+        ["Risk the model predicted", "How often they defaulted"], rows2)
+    return t1 + t2 + _cap(f"Standardised effects, so they are comparable. "
+                          f"Model AUC = {d['auc']:.2f}.")
+
+
+def distributions() -> str:
+    d = _load("eda.json")
+    rows = [[label, f"{dd['median_paid']:.1f}", f"{dd['median_default']:.1f}"]
+            for label, dd in d["distributions"].items()]
+    return _table(["Feature", "Typical: paid back", "Typical: defaulted"], rows) + _cap(
+        "The median borrower in each group. Bigger gaps mean the feature separates "
+        "the two outcomes more.")
+
+
+def correlations() -> str:
+    d = _load("eda.json")
+    cd = d["corr_default"]
+    rows = [[lab, f"{v:+.3f}"] for lab, v in zip(cd["labels"], cd["values"])]
+    t1 = _h("How strongly each fact links to defaulting") + _table(
+        ["Borrower fact", "Link to defaulting"], rows)
+    labels, M = d["corr"]["labels"], d["corr"]["matrix"]
+    head = ["fact"] + labels
+    rows2 = [[labels[i]] + [f"{M[i][j]:+.2f}" for j in range(len(labels))]
+             for i in range(len(labels))]
+    t2 = _h("The full table of relationships") + _table(head, rows2, scroll=True)
+    return t1 + t2 + _cap("All the links to defaulting are weak, which is exactly why "
+                          "predicting it is hard.")
+
+
+def model_performance() -> str:
+    d = _load("eda.json")
+    fpr, tpr = d["roc"]["fpr"], d["roc"]["tpr"]
+    rows = []
+    for t in (0.1, 0.2, 0.3, 0.5):
+        i = min(range(len(fpr)), key=lambda k: abs(fpr[k] - t))
+        rows.append([f"{fpr[i]*100:.0f}%", f"{tpr[i]*100:.0f}%"])
+    return _table(["Good loans wrongly flagged", "Defaulters caught"], rows) + _cap(
+        f"A few points along the ROC curve. AUC = {d['auc']:.2f} (0.5 is a coin flip, "
+        f"1.0 is perfect).")
+
+
+PAGES = {
+    INDEX: {
+        "pd_model": pd_model,
+        "endogenous_terms": endogenous_terms,
+        "pareto_front": pareto_front,
+        "portfolio_trajectories": portfolio_trajectories,
+        "fairness_return_frontier": fairness_return_frontier,
+    },
+    PART1: {
+        "who_defaults": who_defaults,
+        "distributions": distributions,
+        "default_by_purpose": default_by_purpose,
+        "correlations": correlations,
+        "model_drivers": model_drivers,
+        "model_performance": model_performance,
+    },
 }
 
 
@@ -162,16 +243,18 @@ def inject(html_text: str, name: str, table_html: str) -> str:
 
 def main() -> None:
     print("[tables] building data tables behind each chart ...")
-    if not os.path.exists(INDEX):
-        print("  docs/index.html not found, skipping")
-        return
-    with open(INDEX) as f:
-        html = f.read()
-    for name, builder in BUILDERS.items():
-        html = inject(html, name, builder())
-    with open(INDEX, "w") as f:
-        f.write(html)
-    print(f"  injected {len(BUILDERS)} full-data tables into docs/index.html")
+    total = 0
+    for page, builders in PAGES.items():
+        if not os.path.exists(page):
+            continue
+        with open(page) as f:
+            html = f.read()
+        for name, builder in builders.items():
+            html = inject(html, name, builder())
+        with open(page, "w") as f:
+            f.write(html)
+        total += len(builders)
+    print(f"  injected {total} full-data tables across docs/ pages")
 
 
 if __name__ == "__main__":

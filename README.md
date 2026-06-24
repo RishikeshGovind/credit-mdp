@@ -2,7 +2,13 @@
 
 A small study, built on real loan data, about a feedback loop most banks ignore.
 
-Live write-up with all the charts: **https://rishikeshgovind.github.io/credit-mdp/**
+This is **Part 2** of a two-part study on the same Lending Club loans:
+
+- **Part 1 — predicting who defaults** (the groundwork): https://rishikeshgovind.github.io/credit-mdp/part1.html
+- **Part 2 — the lending decision** (this project): https://rishikeshgovind.github.io/credit-mdp/
+
+Part 1 does the ordinary "predict default" step. Part 2 picks up where it ends and
+asks what the bank should actually do once it can predict risk.
 
 ## The idea in one minute
 
