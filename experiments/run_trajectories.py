@@ -54,9 +54,12 @@ def render(out: dict, budget: float) -> None:
     axes[2].set_ylabel("")
     for ax in axes:
         ax.set_xlabel("month")
-    axes[0].legend(loc="lower right", fontsize=10)
-    fig.suptitle("How each strategy plays out month by month",
-                 fontsize=15.5, fontweight="bold", y=1.02)
+    axes[0].legend(loc="upper left", fontsize=9.5)
+    fig.subplots_adjust(top=0.74, bottom=0.16, wspace=0.28)
+    C.fd_title(fig, "How each strategy plays out, month by month",
+               "The grabby strategies tie up their safety money early and pile up "
+               "losses. The balanced ones pace themselves.")
+    C.fd_source(fig, C.SOURCE)
     C.savefig(fig, "portfolio_trajectories.png")
 
 

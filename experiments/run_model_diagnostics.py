@@ -56,27 +56,39 @@ def render(d: dict) -> None:
     fig, (ax, ax2) = plt.subplots(1, 2, figsize=(12.4, 5.0))
 
     hi = max(max(d["pred_mean"]), max(d["obs_mean"])) * 1.05
-    ax.plot([0, hi], [0, hi], ls=":", color=C.PALETTE["muted"], lw=1.6,
-            label="a perfect model")
+    ax.plot([0, hi], [0, hi], ls=":", color=C.GRAY, lw=1.6, label="a perfect model")
     ax.plot(d["pred_mean"], d["obs_mean"], "o-", color=C.PALETTE["pareto"], lw=2.4,
             ms=7, markeredgecolor="white", label="our model")
     ax.set_xlabel("risk the model predicted")
     ax.set_ylabel("how often they actually defaulted")
-    ax.set_title(f"The model matches reality (AUC = {d['auc']:.2f})")
+    ax.set_title(f"Predictions vs reality  (AUC {d['auc']:.2f})")
     ax.legend(loc="upper left")
 
-    cols = ["#264653", "#2a9d8f", "#f4a261", "#e76f51"]
+    # Highlight the data-anchored curve; mute the rest (FlowingData style).
+    cols = {"0": C.GRAY, "1": C.PALETTE["myopic"], "2": C.GRAY, "3": C.GRAY}
     rates = np.array(d["rates"]) * 100
-    for (k, ys), col in zip(d["pd_curves"].items(), cols):
-        ax2.plot(rates, np.array(ys) * 100, color=col, lw=2.6, label=f"k = {k}")
+    for k, ys in d["pd_curves"].items():
+        hot = k == "1"
+        ax2.plot(rates, np.array(ys) * 100, color=cols.get(k, C.GRAY),
+                 lw=2.8 if hot else 1.8, zorder=3 if hot else 2)
+    # direct labels instead of a legend
+    last = {k: np.array(v)[-1] * 100 for k, v in d["pd_curves"].items()}
+    ax2.text(rates[-1] + 0.2, last["1"], "what the data says",
+             color=C.PALETTE["myopic"], fontsize=10.5, va="center", fontweight="bold")
+    ax2.text(rates[-1] + 0.2, last["0"], "rate ignored", color="#8a8275",
+             fontsize=10, va="center")
+    ax2.text(rates[-1] + 0.2, last["3"], "stronger link", color="#8a8275",
+             fontsize=10, va="center")
+    ax2.set_xlim(rates[0], rates[-1] + 5.5)
     ax2.set_xlabel("interest rate the bank offers  (%)")
     ax2.set_ylabel("chance of missing payments  (%)")
     ax2.set_title("A higher rate raises the risk")
-    ax2.legend(title="how strongly rate affects risk")
 
-    fig.suptitle("A risk model built from real loans that reacts to the price",
-                 fontsize=15, fontweight="bold", y=1.0)
-    fig.subplots_adjust(top=0.85, wspace=0.24)
+    fig.subplots_adjust(top=0.74, bottom=0.16, wspace=0.24)
+    C.fd_title(fig, "A risk model that reacts to the price",
+               "Built from real, finished loans. Left: it is honest but only "
+               "moderately accurate. Right: a higher offered rate lifts the risk.")
+    C.fd_source(fig, C.SOURCE)
     C.savefig(fig, "pd_model.png")
 
 

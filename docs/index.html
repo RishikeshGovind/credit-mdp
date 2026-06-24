@@ -59,6 +59,9 @@ p{max-width:64ch; margin-bottom:16px;}
 section{padding:88px clamp(26px,6vw,120px);}
 section+section{border-top:1px solid var(--border);}
 .alt{background:var(--surface);}
+/* keep section backgrounds full width but center the content so wide screens
+   get balanced margins instead of a big empty strip on the right */
+section > .fade{max-width:1180px; margin:0 auto;}
 
 #hero{min-height:100vh; display:flex; flex-direction:column; justify-content:center; padding-top:110px;}
 .hero-note{

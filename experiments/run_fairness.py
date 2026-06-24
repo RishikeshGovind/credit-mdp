@@ -101,8 +101,12 @@ def render(out: dict) -> None:
 
     ax.set_xlabel("gap in approval between income groups  (0 means treated equally)")
     ax.set_ylabel("profit the bank makes  ($000s)")
-    ax.set_title("What fairness costs the bank")
-    ax.legend(loc="lower right", fontsize=10.5)
+    ax.legend(loc="lower right", fontsize=10)
+    fig.subplots_adjust(top=0.80, bottom=0.13, left=0.1, right=0.97)
+    C.fd_title(fig, "What treating people equally costs the bank",
+               "Moving left means treating the two income groups more equally.",
+               y_title=0.965, y_sub=0.905)
+    C.fd_source(fig, C.SOURCE)
     C.savefig(fig, "fairness_return_frontier.png")
 
 

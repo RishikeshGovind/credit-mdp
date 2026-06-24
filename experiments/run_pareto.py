@@ -181,9 +181,12 @@ def render(out: dict) -> None:
     cb.set_label("unfairness between groups (lighter is fairer)")
 
     handles, labels = axes[0].get_legend_handles_labels()
-    axes[0].legend(handles, labels, loc="upper left", fontsize=10)
-    fig.suptitle("Every strategy trades one goal off against another",
-                 fontsize=15.5, fontweight="bold", y=1.02)
+    axes[0].legend(handles, labels, loc="upper left", fontsize=9)
+    fig.subplots_adjust(top=0.78, bottom=0.14)
+    C.fd_title(fig, "Every strategy trades one goal off against another",
+               "Each dot is a lending strategy. The two usual approaches (star and "
+               "cross) sit where the search shows you can do better.")
+    C.fd_source(fig, C.SOURCE)
     C.savefig(fig, "pareto_front.png")
 
 
