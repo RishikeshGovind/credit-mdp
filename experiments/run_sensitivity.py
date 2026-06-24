@@ -79,17 +79,19 @@ def render(data: dict) -> None:
     ys_list = list(data["curves"].values())
     for ys, col, lw in zip(ys_list, cols, lws):
         ax.plot(kappa, np.array(ys) * 100, color=col, lw=lw, marker="o", ms=3)
-    ax.axhline(data["ceiling"] * 100, color=C.GRAY, lw=1.2, ls=":")
-    ax.text(kappa.max(), data["ceiling"] * 100 + 0.1, "charge as much as possible",
+    ceil = data["ceiling"] * 100
+    ax.set_ylim(RATE_GRID.min() * 100 - 1.0, ceil + 2.4)
+    ax.axhline(ceil, color=C.GRAY, lw=1.2, ls=(0, (1, 1.6)))
+    ax.text(0.1, ceil + 0.4, "charge as much as possible",
+            ha="left", va="bottom", color="#8a8275", fontsize=10)
+    ax.text(kappa.max(), ceil + 0.4, "typical borrowers",
             ha="right", va="bottom", color="#8a8275", fontsize=10)
-    ax.text(kappa.max(), np.array(ys_list[0])[-1] * 100 - 0.6, "typical borrowers",
-            ha="right", va="top", color="#8a8275", fontsize=10)
-    ax.text(kappa.max(), np.array(ys_list[1])[-1] * 100 + 0.4, "riskier borrowers",
+    ax.text(kappa.max(), np.array(ys_list[1])[-1] * 100 + 0.5, "riskier borrowers",
             ha="right", va="bottom", color=C.PALETTE["myopic"], fontsize=10.5,
             fontweight="bold")
     ax.axvline(data["data_anchored_kappa"], color=C.PALETTE["accent"], lw=1.6, ls="-.")
-    ax.text(data["data_anchored_kappa"] + 0.12, RATE_GRID.min() * 100 + 0.3,
-            "what the\nreal data says", color="#b7902a", fontsize=10, va="bottom")
+    ax.text(data["data_anchored_kappa"] + 0.18, RATE_GRID.min() * 100 + 4.5,
+            "what the\nreal data says", color="#b7902a", fontsize=10, va="center")
     ax.set_xlabel("how strongly the rate changes the risk")
     ax.set_ylabel("best rate to charge  (%)")
     ax.set_title("The best rate to charge")
@@ -103,12 +105,12 @@ def render(data: dict) -> None:
         imax = int(np.argmax(y))
         ax2.plot(rates[imax], y[imax], "o", color=pcols[k], ms=8,
                  markeredgecolor="white", zorder=5)
-    ax2.text(rates[-1] + 0.2, np.array(data["profit_curves"]["1"])[-1],
+    ax2.text(rates[-1] + 0.5, np.array(data["profit_curves"]["1"])[-1],
              "real-data level", color=C.PALETTE["myopic"], fontsize=10.5,
              va="center", fontweight="bold")
-    ax2.text(rates[-1] + 0.2, np.array(data["profit_curves"]["0"])[-1],
+    ax2.text(rates[-1] + 0.5, np.array(data["profit_curves"]["0"])[-1],
              "rate ignored", color="#8a8275", fontsize=10, va="center")
-    ax2.set_xlim(rates[0], rates[-1] + 6)
+    ax2.set_xlim(rates[0], rates[-1] + 7)
     ax2.set_xlabel("rate the bank charges  (%)")
     ax2.set_ylabel("profit per $1 lent")
     ax2.set_title("Where profit peaks (riskier borrowers)")

@@ -19,7 +19,7 @@ html{scroll-behavior:smooth;}
 body{
   background:var(--bg); color:var(--text);
   font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
-  font-size:16px; line-height:1.68; overflow-x:hidden;
+  font-size:17px; line-height:1.72; overflow-x:hidden;
 }
 em{font-style:italic;}
 
@@ -51,9 +51,9 @@ h1{font-family:'Playfair Display',serif; font-size:clamp(42px,6vw,84px); line-he
 h1 em{color:var(--teal-deep);}
 h2{font-family:'Playfair Display',serif; font-size:clamp(30px,4.2vw,54px); line-height:1.16; margin-bottom:16px;}
 h3{font-family:'Playfair Display',serif; font-size:clamp(19px,2vw,24px); line-height:1.3; margin-bottom:10px;}
-.lead{font-size:19px; color:var(--text); font-weight:300; line-height:1.7; max-width:62ch;}
+.lead{font-size:21px; color:var(--text); font-weight:300; line-height:1.6; max-width:none;}
 .accent-line{width:44px; height:3px; background:var(--teal); margin:18px 0 30px;}
-p{max-width:64ch; margin-bottom:16px;}
+p{max-width:none; margin-bottom:16px;}
 .big-p{font-size:17px;}
 
 section{padding:88px clamp(26px,6vw,120px);}
@@ -61,17 +61,17 @@ section+section{border-top:1px solid var(--border);}
 .alt{background:var(--surface);}
 /* keep section backgrounds full width but center the content so wide screens
    get balanced margins instead of a big empty strip on the right */
-section > .fade{max-width:1180px; margin:0 auto;}
+section > .fade{max-width:880px; margin:0 auto;}
 
 #hero{min-height:100vh; display:flex; flex-direction:column; justify-content:center; padding-top:110px;}
 .hero-note{
   margin-top:30px; padding:22px 26px; background:var(--surface);
-  border-left:3px solid var(--teal); border-radius:0 10px 10px 0; max-width:64ch;
+  border-left:3px solid var(--teal); border-radius:0 10px 10px 0; max-width:none;
 }
 .hero-note p{font-size:16px; color:var(--text); margin-bottom:0; max-width:none;}
 .hero-note strong{font-weight:600;}
 .hero-stats{
-  display:grid; grid-template-columns:repeat(3,1fr); gap:1px; margin-top:46px; max-width:760px;
+  display:grid; grid-template-columns:repeat(3,1fr); gap:1px; margin-top:46px; max-width:none;
   border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--border);
 }
 .stat{padding:28px 30px; background:var(--bg);}
@@ -97,12 +97,12 @@ section > .fade{max-width:1180px; margin:0 auto;}
 .card h4{font-family:'Playfair Display',serif; font-size:19px; margin-bottom:8px;}
 .card p{font-size:14px; color:var(--muted); margin-bottom:0;}
 
-.fig{margin:24px 0 6px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px clamp(14px,3vw,30px); box-shadow:0 1px 3px rgba(40,30,20,.04);}
+.fig{margin:28px 0 6px; background:#eae6dd; border:1px solid #ddd6c8; border-radius:14px; overflow:hidden; box-shadow:0 1px 3px rgba(40,30,20,.05);}
 .fig img{width:100%; height:auto; display:block;}
-.fig-cap{font-size:14px; color:var(--muted); line-height:1.6; margin-top:14px; max-width:none;}
+.fig-cap{font-size:14px; color:var(--muted); line-height:1.6; padding:4px 24px 18px; max-width:none;}
 .fig-cap b{color:var(--text); font-weight:600;}
 
-.callout{margin:24px 0; padding:22px 26px; background:#FFF6F2; border:1.5px solid var(--orange); border-radius:12px; display:flex; gap:16px; align-items:flex-start; max-width:74ch;}
+.callout{margin:24px 0; padding:22px 26px; background:#FFF6F2; border:1.5px solid var(--orange); border-radius:12px; display:flex; gap:16px; align-items:flex-start; max-width:none;}
 .callout .ic{font-size:22px;}
 .callout h4{font-family:'Playfair Display',serif; font-size:18px; margin-bottom:6px;}
 .callout p{font-size:15px; color:var(--muted); margin-bottom:0; max-width:none;}
@@ -112,7 +112,7 @@ section > .fade{max-width:1180px; margin:0 auto;}
 .chip strong{color:var(--text); font-weight:600;}
 .chip .d{width:9px;height:9px;border-radius:50%;}
 
-.lim{list-style:none; margin-top:30px; max-width:72ch;}
+.lim{list-style:none; margin-top:30px; max-width:none;}
 .lim li{display:flex; gap:16px; padding:18px 0; border-bottom:1px solid var(--border); font-size:15px; color:var(--muted); line-height:1.6;}
 .lim li:last-child{border-bottom:none;}
 .lim li strong{color:var(--text); display:block; margin-bottom:3px;}

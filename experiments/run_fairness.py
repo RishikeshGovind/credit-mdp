@@ -73,19 +73,20 @@ def main() -> dict:
 def render(out: dict) -> None:
     import matplotlib.pyplot as plt
     C.apply_style()
-    fig, ax = plt.subplots(figsize=(8.2, 5.4))
+    fig, ax = plt.subplots(figsize=(9.0, 6.4))
     gaps = np.array(out["gaps_grid"])
     frontier = np.array(out["frontier"], float) / 1e3
 
     ax.plot(gaps, frontier, color=C.PALETTE["pareto"], lw=2.8,
-            label="best profit you can get at each fairness level")
+            label="best profit at each fairness level")
     ax.fill_between(gaps, frontier, frontier.min(), color=C.PALETTE["pareto_fill"],
                     alpha=0.25)
 
     sw_gaps = np.array(out["sweep"]["gaps"])
     sw_ret = np.array(out["sweep"]["returns"]) / 1e3
-    ax.plot(sw_gaps, sw_ret, color=C.PALETTE["accent"], lw=2.0, ls="--", marker="o",
-            ms=5, label="one policy, dialing up fairness")
+    ax.plot(sw_gaps, sw_ret, color=C.PALETTE["accent"], lw=2.2, ls="--", marker="o",
+            ms=6, markerfacecolor="white", markeredgecolor=C.PALETTE["accent"],
+            markeredgewidth=1.6, label="one policy, dialing up fairness")
 
     marks = [("baselines", "myopic", "the usual bank approach", C.PALETTE["myopic"], "*", 360),
              ("baselines", "single_objective", "chase profit only",
@@ -101,11 +102,14 @@ def render(out: dict) -> None:
 
     ax.set_xlabel("gap in approval between income groups  (0 means treated equally)")
     ax.set_ylabel("profit the bank makes  ($000s)")
-    ax.legend(loc="lower right", fontsize=10)
-    fig.subplots_adjust(top=0.80, bottom=0.13, left=0.1, right=0.97)
+    # Header legend (same system as the other charts), clear of the data.
+    handles, labels = ax.get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 0.84),
+               ncol=2, fontsize=10.5, columnspacing=2.4, handletextpad=0.7)
+    fig.subplots_adjust(top=0.62, bottom=0.11, left=0.1, right=0.97)
     C.fd_title(fig, "What treating people equally costs the bank",
                "Moving left means treating the two income groups more equally.",
-               y_title=0.965, y_sub=0.905)
+               y_title=0.985, y_sub=0.93)
     C.fd_source(fig, C.SOURCE)
     C.savefig(fig, "fairness_return_frontier.png")
 

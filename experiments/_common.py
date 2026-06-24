@@ -8,6 +8,7 @@ import os
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import font_manager as fm
 
 from data.load_data import load_clean
 from model.default_model import PDModel, fit_default_model
@@ -15,6 +16,18 @@ from solver.lending_env import LendingMDP, LendingScenario
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIG_DIR = os.path.join(ROOT, "figures")
+
+# Use the website's own fonts in the charts (Inter for everything, Playfair Display
+# for titles) so the figures read as part of the page, not as default matplotlib.
+FONT_DIR = os.path.join(ROOT, "assets", "fonts")
+for _f in ("Inter-Regular.ttf", "Inter-Medium.ttf", "Inter-SemiBold.ttf",
+           "PlayfairDisplay-Bold.ttf"):
+    _p = os.path.join(FONT_DIR, _f)
+    if os.path.exists(_p):
+        fm.fontManager.addfont(_p)
+_PLAYFAIR_PATH = os.path.join(FONT_DIR, "PlayfairDisplay-Bold.ttf")
+SERIF_TITLE = (fm.FontProperties(fname=_PLAYFAIR_PATH)
+               if os.path.exists(_PLAYFAIR_PATH) else fm.FontProperties())
 RESULTS_DIR = os.path.join(ROOT, "experiments", "results")
 os.makedirs(FIG_DIR, exist_ok=True)
 os.makedirs(RESULTS_DIR, exist_ok=True)
@@ -38,56 +51,71 @@ SEQ = ["#264653", "#2a9d8f", "#8ab17d", "#e9c46a", "#f4a261", "#e76f51"]
 # FlowingData-inspired editorial styling: transparent warm background, light
 # horizontal-only gridlines, restrained axes, left-aligned bold titles with a gray
 # explanatory subtitle, and a small source line. Ink colours below.
-INK = "#1c1917"
+INK = "#33302b"
 SUBTLE_INK = "#6f675c"
 FAINT_INK = "#9a9285"
-GRAY = "#bdb4a4"            # the "everything that isn't highlighted" colour
+GRAY = "#c3bcae"            # the "everything that isn't highlighted" colour
+GHOST = "#d2ccbe"          # even fainter, for ghosted context lines
+PANEL = "#eae6dd"          # the flat background panel (FlowingData signature)
 
 
 def apply_style() -> None:
     mpl.rcParams.update({
         "figure.dpi": 130,
         "savefig.dpi": 160,
-        "savefig.transparent": True,
-        "figure.facecolor": "none",
-        "axes.facecolor": "none",
-        "savefig.facecolor": "none",
-        "axes.edgecolor": "#cfc6b6",
-        "axes.linewidth": 1.0,
+        "savefig.transparent": False,
+        "figure.facecolor": PANEL,       # solid flat panel fills the whole chart
+        "axes.facecolor": PANEL,
+        "savefig.facecolor": PANEL,
+        "font.family": "sans-serif",
+        "font.sans-serif": ["Inter", "Helvetica Neue", "Arial", "DejaVu Sans"],
         "axes.grid": True,
-        "axes.grid.axis": "y",          # horizontal reference lines only
+        "axes.grid.axis": "y",           # faint horizontal reference lines only
         "axes.axisbelow": True,
-        "grid.color": "#e4ddd0",
-        "grid.linewidth": 0.9,
+        "grid.color": "#dcd5c6",
+        "grid.linewidth": 1.0,
         "axes.spines.top": False,
         "axes.spines.right": False,
-        "axes.spines.left": False,      # editorial: drop the left spine, keep ticks light
+        "axes.spines.left": False,
+        "axes.spines.bottom": False,     # no spines at all, just the faint grid
         "text.color": INK,
         "axes.labelcolor": SUBTLE_INK,
         "axes.titlecolor": INK,
         "xtick.color": "#8a8275",
         "ytick.color": "#8a8275",
-        "xtick.labelsize": 11,
-        "ytick.labelsize": 11,
+        "xtick.labelsize": 11.5,
+        "ytick.labelsize": 11.5,
+        "xtick.major.size": 0,
+        "ytick.major.size": 0,
         "font.size": 13,
-        "axes.titlesize": 13.5,
-        "axes.titleweight": "bold",
-        "axes.titlelocation": "left",   # FlowingData: titles hug the left
-        "axes.titlepad": 10,
+        "axes.titlesize": 13,
+        "axes.titleweight": "semibold",
+        "axes.titlelocation": "left",
+        "axes.titlepad": 12,
+        "axes.labelpad": 8,
         "axes.labelsize": 12,
+        "lines.solid_capstyle": "round",
         "legend.frameon": False,
-        "legend.fontsize": 10.5,
+        "legend.fontsize": 11,
     })
 
 
+def fd_dot(ax, x, y, color, label=None, lw=3.0, ms=7, z=5):
+    """A FlowingData-style series: a thick line with white-filled open-circle
+    markers at every data point."""
+    ax.plot(x, y, color=color, lw=lw, label=label, zorder=z,
+            marker="o", markersize=ms, markerfacecolor="white",
+            markeredgecolor=color, markeredgewidth=1.8)
+
+
 def fd_title(fig, title: str, subtitle: str = "", x: float = 0.012,
-             y_title: float = 0.985, y_sub: float = 0.925) -> None:
-    """Left-aligned bold title with a lighter explanatory subtitle, FlowingData
-    style. Call after laying out axes with room reserved at the top."""
-    fig.text(x, y_title, title, ha="left", va="top", fontsize=18,
-             fontweight="bold", color=INK)
+             y_title: float = 0.99, y_sub: float = 0.93) -> None:
+    """Left-aligned serif title (the page's Playfair Display) with a lighter Inter
+    subtitle, so the chart's heading matches the website's headings."""
+    fig.text(x, y_title, title, ha="left", va="top", fontsize=22,
+             color=INK, fontproperties=SERIF_TITLE)
     if subtitle:
-        fig.text(x, y_sub, subtitle, ha="left", va="top", fontsize=12,
+        fig.text(x, y_sub, subtitle, ha="left", va="top", fontsize=12.5,
                  color=SUBTLE_INK)
 
 

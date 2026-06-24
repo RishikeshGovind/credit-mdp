@@ -141,18 +141,18 @@ def render(out: dict) -> None:
     so = out["baselines"]["single_objective"]["metrics"]
     reps = out["representatives"]
 
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5.4))
+    fig, axes = plt.subplots(1, 2, figsize=(13, 6.2))
 
     def panel(ax, ykey, ylabel, title, invert=True):
         gx = [d["return"] / 1e3 for d in dom]
         gy = [d[ykey] for d in dom]
-        ax.scatter(gx, gy, s=14, color=C.PALETTE["muted"], alpha=0.5,
+        ax.scatter(gx, gy, s=22, color="#b6ac99", alpha=0.55, linewidth=0,
                    label="other strategies we tried", zorder=1)
         px = [p["return"] / 1e3 for p in pareto]
         py = [p[ykey] for p in pareto]
         gaps = [p["approval_gap"] for p in pareto]
-        sc = ax.scatter(px, py, c=gaps, cmap="viridis_r", s=46,
-                        edgecolor="white", linewidth=0.5, zorder=3,
+        sc = ax.scatter(px, py, c=gaps, cmap="viridis_r", s=58,
+                        edgecolor="white", linewidth=1.0, zorder=3,
                         label="the best balances")
         # baselines as stars
         ax.scatter([myo["return"] / 1e3], [myo[ykey]], marker="*", s=420,
@@ -177,15 +177,18 @@ def render(out: dict) -> None:
     sc = panel(axes[1], "capital_utilization",
                "how much of its safety money it uses  (lower is better)",
                "Profit vs capital used")
-    cb = fig.colorbar(sc, ax=axes, fraction=0.035, pad=0.02)
+    fig.subplots_adjust(top=0.60, bottom=0.11, wspace=0.2, right=0.9)
+    cb = fig.colorbar(sc, ax=axes, fraction=0.03, pad=0.02)
     cb.set_label("unfairness between groups (lighter is fairer)")
 
+    # Header legend (the same system as the other charts): clear of the data.
     handles, labels = axes[0].get_legend_handles_labels()
-    axes[0].legend(handles, labels, loc="upper left", fontsize=9)
-    fig.subplots_adjust(top=0.78, bottom=0.14)
+    fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 0.82),
+               ncol=4, fontsize=10.5, columnspacing=2.2, handletextpad=0.6)
     C.fd_title(fig, "Every strategy trades one goal off against another",
                "Each dot is a lending strategy. The two usual approaches (star and "
-               "cross) sit where the search shows you can do better.")
+               "cross) sit where the search shows you can do better.",
+               y_title=0.985, y_sub=0.91)
     C.fd_source(fig, C.SOURCE)
     C.savefig(fig, "pareto_front.png")
 
